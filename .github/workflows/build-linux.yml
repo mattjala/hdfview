@@ -354,10 +354,8 @@ jobs:
             VERSION="${{ steps.get-version.outputs.HDFVIEW_VERSION }}"
 
             # Create launcher properties file for additional launcher in /usr/bin
-            cat > hdfview-launcher.properties << 'EOF'
-# Additional launcher configuration
-# This creates a launcher in /usr/bin (standard location for system binaries)
-EOF
+            echo "# Additional launcher configuration" > hdfview-launcher.properties
+            echo "# This creates a launcher in /usr/bin (standard location for system binaries)" >> hdfview-launcher.properties
 
             # Use jpackage to create DEB from app-image
             jpackage \
@@ -388,10 +386,8 @@ EOF
             VERSION="${{ steps.get-version.outputs.HDFVIEW_VERSION }}"
 
             # Create launcher properties file for additional launcher in /usr/bin
-            cat > hdfview-launcher.properties << 'EOF'
-# Additional launcher configuration
-# This creates a launcher in /usr/bin (standard location for system binaries)
-EOF
+            echo "# Additional launcher configuration" > hdfview-launcher.properties
+            echo "# This creates a launcher in /usr/bin (standard location for system binaries)" >> hdfview-launcher.properties
 
             # Use jpackage to create RPM from app-image
             jpackage \
@@ -413,7 +409,7 @@ EOF
 
             echo "RPM installer created successfully"
             ls -lh *.rpm
-    
+
         - name: Upload DEB Installer Artifact
           uses: actions/upload-artifact@v4
           with:
