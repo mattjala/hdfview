@@ -353,6 +353,12 @@ jobs:
             # Version loaded from VERSION file
             VERSION="${{ steps.get-version.outputs.HDFVIEW_VERSION }}"
 
+            # Create launcher properties file for additional launcher in /usr/bin
+            cat > hdfview-launcher.properties << 'EOF'
+# Additional launcher configuration
+# This creates a launcher in /usr/bin (standard location for system binaries)
+EOF
+
             # Use jpackage to create DEB from app-image
             jpackage \
                 --type deb \
@@ -363,6 +369,7 @@ jobs:
                 --linux-package-name HDFView \
                 --linux-menu-group "Science" \
                 --linux-shortcut \
+                --add-launcher hdfview=hdfview-launcher.properties \
                 --file-associations package_files/HDFViewHDF.properties \
                 --file-associations package_files/HDFViewH4.properties \
                 --file-associations package_files/HDFViewHDF4.properties \
@@ -380,6 +387,12 @@ jobs:
             # Version loaded from VERSION file
             VERSION="${{ steps.get-version.outputs.HDFVIEW_VERSION }}"
 
+            # Create launcher properties file for additional launcher in /usr/bin
+            cat > hdfview-launcher.properties << 'EOF'
+# Additional launcher configuration
+# This creates a launcher in /usr/bin (standard location for system binaries)
+EOF
+
             # Use jpackage to create RPM from app-image
             jpackage \
                 --type rpm \
@@ -390,6 +403,7 @@ jobs:
                 --linux-package-name HDFView \
                 --linux-menu-group "Science" \
                 --linux-shortcut \
+                --add-launcher hdfview=hdfview-launcher.properties \
                 --file-associations package_files/HDFViewHDF.properties \
                 --file-associations package_files/HDFViewH4.properties \
                 --file-associations package_files/HDFViewHDF4.properties \
