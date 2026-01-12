@@ -416,6 +416,33 @@
       </build>
     </profile>
 
+    <!-- jpackage profile for Windows app-image (adds Windows-specific options) -->
+    <!-- Must be explicitly activated: mvn verify -Pjpackage-app-image,jpackage-win-base -->
+    <!-- Only use when creating app-image, NOT when creating installers from app-image -->
+    <profile>
+      <id>jpackage-win-base</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jpackage</id>
+                <configuration>
+                  <arguments combine.children="append">
+                    <argument>--icon</argument>
+                    <argument>${project.basedir}/../package_files/hdfview.ico</argument>
+                    <argument>--win-console</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <!-- jpackage profile for creating DEB installer -->
     <!-- Use with: mvn package -Pjpackage-installer-deb -pl hdfview -->
     <!-- Requires pre-built app-image in hdfview/target/dist/HDFView -->
@@ -668,7 +695,6 @@
                     <argument>${jpackage.app.version}</argument>
                     <argument>--icon</argument>
                     <argument>${project.basedir}/../package_files/hdfview.ico</argument>
-                    <argument>--win-console</argument>
                     <argument>--win-dir-chooser</argument>
                     <argument>--win-per-user-install</argument>
                     <argument>--win-menu</argument>
