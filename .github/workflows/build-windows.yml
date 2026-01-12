@@ -769,40 +769,19 @@ jobs:
 
             Write-Host "Found executable: $($exeFile.FullName)"
 
-            # Wait for file to be released by jpackage and antivirus scanning
-            Write-Host "Waiting for file to be fully released..."
-            Start-Sleep -Seconds 5
+            # Remove write protection to allow signing
+            Write-Host "Removing write protection..."
+            Set-ItemProperty -Path $exeFile.FullName -Name IsReadOnly -Value $false
 
             $signtoolPath = "${{ github.workspace }}/Microsoft.Windows.SDK.BuildTools/bin/10.0.22621.0/x64/signtool.exe"
             $dllPath = "${{ github.workspace }}/Microsoft.Trusted.Signing.Client/bin/x64/Azure.CodeSigning.Dlib.dll"
             $metadataPath = "${{ github.workspace }}/credentials.json"
 
-            # Retry signing up to 3 times with delays
-            $maxAttempts = 3
-            $attempt = 1
-            $signed = $false
+            & $signtoolPath sign /v /debug /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 /dlib $dllPath /dmdf $metadataPath $exeFile.FullName
 
-            while ($attempt -le $maxAttempts -and -not $signed) {
-              Write-Host "Signing attempt $attempt of $maxAttempts..."
-
-              & $signtoolPath sign /v /debug /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 /dlib $dllPath /dmdf $metadataPath $exeFile.FullName
-
-              if ($LASTEXITCODE -eq 0) {
-                $signed = $true
-                Write-Host "✓ Signing succeeded"
-              } else {
-                Write-Warning "Signing attempt $attempt failed with exit code $LASTEXITCODE"
-                if ($attempt -lt $maxAttempts) {
-                  Write-Host "Waiting 10 seconds before retry..."
-                  Start-Sleep -Seconds 10
-                }
-                $attempt++
-              }
-            }
-
-            if (-not $signed) {
-              Write-Error "Signing failed after $maxAttempts attempts"
-              exit 1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Signing failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
             }
 
             # Verify signature
@@ -811,6 +790,10 @@ jobs:
               Write-Error "Signature verification failed: $($sig.Status)"
               exit 1
             }
+
+            # Restore write protection
+            Write-Host "Restoring write protection..."
+            Set-ItemProperty -Path $exeFile.FullName -Name IsReadOnly -Value $true
 
             Write-Host "✓ Executable signed and verified"
 
@@ -863,40 +846,19 @@ jobs:
 
             Write-Host "Signing MSI: $msiFile"
 
-            # Wait for file to be released by jpackage and antivirus scanning
-            Write-Host "Waiting for file to be fully released..."
-            Start-Sleep -Seconds 5
+            # Remove write protection to allow signing
+            Write-Host "Removing write protection..."
+            Set-ItemProperty -Path $msiFile -Name IsReadOnly -Value $false
 
             $signtoolPath = "${{ github.workspace }}/Microsoft.Windows.SDK.BuildTools/bin/10.0.22621.0/x64/signtool.exe"
             $dllPath = "${{ github.workspace }}/Microsoft.Trusted.Signing.Client/bin/x64/Azure.CodeSigning.Dlib.dll"
             $metadataPath = "${{ github.workspace }}/credentials.json"
 
-            # Retry signing up to 3 times with delays
-            $maxAttempts = 3
-            $attempt = 1
-            $signed = $false
+            & $signtoolPath sign /v /debug /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 /dlib $dllPath /dmdf $metadataPath $msiFile
 
-            while ($attempt -le $maxAttempts -and -not $signed) {
-              Write-Host "Signing attempt $attempt of $maxAttempts..."
-
-              & $signtoolPath sign /v /debug /fd SHA256 /tr "http://timestamp.acs.microsoft.com" /td SHA256 /dlib $dllPath /dmdf $metadataPath $msiFile
-
-              if ($LASTEXITCODE -eq 0) {
-                $signed = $true
-                Write-Host "✓ Signing succeeded"
-              } else {
-                Write-Warning "Signing attempt $attempt failed with exit code $LASTEXITCODE"
-                if ($attempt -lt $maxAttempts) {
-                  Write-Host "Waiting 10 seconds before retry..."
-                  Start-Sleep -Seconds 10
-                }
-                $attempt++
-              }
-            }
-
-            if (-not $signed) {
-              Write-Error "Signing failed after $maxAttempts attempts"
-              exit 1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Signing failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
             }
 
             # Verify signature
@@ -905,6 +867,10 @@ jobs:
               Write-Error "Signature verification failed: $($sig.Status)"
               exit 1
             }
+
+            # Restore write protection
+            Write-Host "Restoring write protection..."
+            Set-ItemProperty -Path $msiFile -Name IsReadOnly -Value $true
 
             Write-Host "✓ MSI signed and verified"
 
