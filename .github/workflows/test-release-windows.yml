@@ -8,12 +8,32 @@ on:
         type: string
         required: true
         default: 'snapshot'
+      hdf4_version:
+        description: 'HDF4 version used in release'
+        type: string
+        required: false
+        default: '4.3.1'
+      hdf5_version:
+        description: 'HDF5 version used in release'
+        type: string
+        required: false
+        default: '2.0.0'
   workflow_call:
     inputs:
       release_tag:
         description: 'HDFView release tag (e.g., HDFView-3.4.0, snapshot)'
         type: string
         required: true
+      hdf4_version:
+        description: 'HDF4 version used in release'
+        type: string
+        required: false
+        default: '4.3.1'
+      hdf5_version:
+        description: 'HDF5 version used in release'
+        type: string
+        required: false
+        default: '2.0.0'
 
 permissions:
   contents: read
@@ -25,10 +45,34 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Remove pre-installed Java
+      - name: Remove pre-installed Java and unset environment variables
         shell: pwsh
         run: |
-          Write-Host "Removing pre-installed Java to test bundled JRE..."
+          Write-Host "Unsetting Java environment variables..."
+
+          # Remove Java environment variables
+          $javaVars = @('JAVA_HOME', 'JDK_HOME', 'JRE_HOME', 'CLASSPATH')
+          foreach ($var in $javaVars) {
+            if (Test-Path "Env:\$var") {
+              Remove-Item "Env:\$var" -ErrorAction SilentlyContinue
+              Write-Host "Removed Env:\$var"
+            }
+          }
+
+          # Remove GitHub Actions Java setup variables (JAVA_HOME_<version>_<arch>)
+          Get-ChildItem Env: | Where-Object { $_.Name -like 'JAVA_HOME_*' } | ForEach-Object {
+            Remove-Item "Env:\$($_.Name)" -ErrorAction SilentlyContinue
+            Write-Host "Removed Env:\$($_.Name)"
+          }
+
+          # Remove Java paths from PATH
+          $currentPath = $env:PATH
+          $pathEntries = $currentPath -split ';' | Where-Object {
+            $_ -notmatch '(java|jdk|jre)'
+          }
+          $env:PATH = $pathEntries -join ';'
+
+          Write-Host "Removing pre-installed Java directories..."
 
           # Remove common Java installation directories
           $javaPaths = @(
@@ -53,6 +97,10 @@ jobs:
           } catch {
             Write-Host "✓ Java not found (expected)"
           }
+
+          Write-Host "Environment check:"
+          Write-Host "JAVA_HOME=$($env:JAVA_HOME ?? '<not set>')"
+          Write-Host "PATH=$env:PATH"
 
       - name: Download app binary from release
         env:
@@ -119,6 +167,8 @@ jobs:
           @"
           ## App Binary Test Summary
           - **Release Tag**: ${{ inputs.release_tag }}
+          - **HDF4 Version**: ${{ inputs.hdf4_version }}
+          - **HDF5 Version**: ${{ inputs.hdf5_version }}
           - **Test**: Launch verification (5 second stability check)
           - **Display**: Native Windows GUI display
           "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -129,10 +179,34 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Remove pre-installed Java
+      - name: Remove pre-installed Java and unset environment variables
         shell: pwsh
         run: |
-          Write-Host "Removing pre-installed Java to test bundled JRE..."
+          Write-Host "Unsetting Java environment variables..."
+
+          # Remove Java environment variables
+          $javaVars = @('JAVA_HOME', 'JDK_HOME', 'JRE_HOME', 'CLASSPATH')
+          foreach ($var in $javaVars) {
+            if (Test-Path "Env:\$var") {
+              Remove-Item "Env:\$var" -ErrorAction SilentlyContinue
+              Write-Host "Removed Env:\$var"
+            }
+          }
+
+          # Remove GitHub Actions Java setup variables (JAVA_HOME_<version>_<arch>)
+          Get-ChildItem Env: | Where-Object { $_.Name -like 'JAVA_HOME_*' } | ForEach-Object {
+            Remove-Item "Env:\$($_.Name)" -ErrorAction SilentlyContinue
+            Write-Host "Removed Env:\$($_.Name)"
+          }
+
+          # Remove Java paths from PATH
+          $currentPath = $env:PATH
+          $pathEntries = $currentPath -split ';' | Where-Object {
+            $_ -notmatch '(java|jdk|jre)'
+          }
+          $env:PATH = $pathEntries -join ';'
+
+          Write-Host "Removing pre-installed Java directories..."
 
           # Remove common Java installation directories
           $javaPaths = @(
@@ -157,6 +231,10 @@ jobs:
           } catch {
             Write-Host "✓ Java not found (expected)"
           }
+
+          Write-Host "Environment check:"
+          Write-Host "JAVA_HOME=$($env:JAVA_HOME ?? '<not set>')"
+          Write-Host "PATH=$env:PATH"
 
       - name: Download MSI installer
         env:
@@ -274,6 +352,8 @@ jobs:
           @"
           ## MSI Installer Test Summary
           - **Release Tag**: ${{ inputs.release_tag }}
+          - **HDF4 Version**: ${{ inputs.hdf4_version }}
+          - **HDF5 Version**: ${{ inputs.hdf5_version }}
           - **Test**: Launch verification (5 second stability check)
           - **Display**: Native Windows GUI display
           "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append

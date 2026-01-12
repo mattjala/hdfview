@@ -668,6 +668,7 @@
                     <argument>${jpackage.app.version}</argument>
                     <argument>--icon</argument>
                     <argument>${project.basedir}/../package_files/hdfview.ico</argument>
+                    <argument>--win-console</argument>
                     <argument>--win-dir-chooser</argument>
                     <argument>--win-per-user-install</argument>
                     <argument>--win-menu</argument>

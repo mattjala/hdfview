@@ -2,6 +2,17 @@ name: Maven CI Pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      hdf4_version:
+        description: 'HDF4 version to use'
+        type: string
+        required: false
+        default: '4.3.1'
+      hdf5_version:
+        description: 'HDF5 version to use'
+        type: string
+        required: false
+        default: '2.0.0'
   push:
   pull_request:
     branches: [ master ]
@@ -15,6 +26,9 @@ jobs:
   ci-linux:
     name: CI - Linux
     uses: ./.github/workflows/ci-linux.yml
+    with:
+      hdf4_version: ${{ inputs.hdf4_version || '4.3.1' }}
+      hdf5_version: ${{ inputs.hdf5_version || '2.0.0' }}
     permissions:
       contents: read
       checks: write
@@ -23,6 +37,9 @@ jobs:
   ci-windows:
     name: CI - Windows
     uses: ./.github/workflows/ci-windows.yml
+    with:
+      hdf4_version: ${{ inputs.hdf4_version || '4.3.1' }}
+      hdf5_version: ${{ inputs.hdf5_version || '2.0.0' }}
     permissions:
       contents: read
       checks: write
@@ -31,6 +48,9 @@ jobs:
   ci-macos:
     name: CI - macOS
     uses: ./.github/workflows/ci-macos.yml
+    with:
+      hdf4_version: ${{ inputs.hdf4_version || '4.3.1' }}
+      hdf5_version: ${{ inputs.hdf5_version || '2.0.0' }}
     permissions:
       contents: read
       checks: write
