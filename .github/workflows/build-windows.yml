@@ -714,7 +714,7 @@ jobs:
             # -Dpmd.skip=true: Skip PMD (static analysis not needed for release)
             # -Ddependency-check.skip=true: Skip OWASP (runs in separate security workflow)
             # -Dmaven.antrun.skip=true: Skip Ant plugin (we manually prepared the input directory)
-            mvn verify -Pjpackage-app-image,jpackage-win-base -pl object,hdfview `
+            mvn verify "-Pjpackage-app-image,jpackage-win-base" "-pl" "object,hdfview" `
               "-Dmaven.test.skip=true" `
               "-Djacoco.skip=true" `
               "-Dpmd.skip=true" `
