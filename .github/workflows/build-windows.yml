@@ -375,7 +375,7 @@ jobs:
           uses: actions/setup-java@v4
           with:
             java-version: '21'
-            distribution: 'temurin'
+            distribution: 'oracle'
   
         - name: Cache Maven Dependencies
           uses: actions/cache@v4
