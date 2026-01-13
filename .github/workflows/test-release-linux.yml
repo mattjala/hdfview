@@ -285,7 +285,6 @@ jobs:
       - name: Install dependencies
         run: |
           echo "Installing required packages in Fedora container..."
-          #dnf install -y wget xorg-x11-server-Xvfb gtk3 procps-ng findutils
           dnf install -y wget xorg-x11-server-Xvfb procps-ng findutils
 
       - name: Remove pre-installed Java and unset environment variables
@@ -340,7 +339,8 @@ jobs:
       - name: Install RPM package
         run: |
           echo "Installing RPM package..."
-          dnf install -y HDFView-*-Linux.rpm
+          # Skip %post scripts on github runner
+          dnf install -y HDFView-*-Linux.rpm --setopt=tsflags=noscripts
 
           echo "Verifying installation..."
           rpm -qa | grep -i hdfview || echo "Package listing check"
