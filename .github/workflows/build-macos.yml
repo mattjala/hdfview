@@ -244,13 +244,19 @@ jobs:
 
         - name: Create App Image + Install with Maven Profile
           run: |
-            echo "Creating ${{ matrix.arch }} app-image using Maven jpackage profile..."
+            # Conditionally add signing profile if on canonical repo with certs
+            if [[ "${{ github.repository }}" == "HDFGroup/hdfview" && -n "${{ env.APPLE_CERTS_BASE64 }}" ]]; then
+              SIGN_PROFILE=",jpackage-mac-sign"
+              SIGN_STATUS="signed"
+            else
+              SIGN_PROFILE=""
+              SIGN_STATUS="unsigned"
+            fi
 
-            # use base app-image profile + mac specific options
-            # TODO - May only need to use mvn verify here.
-            # The install step populates ~/.m2/repository, which probably is not need for app-image
-            # and may not be needed for the DMG creation
-            mvn install -Pjpackage-app-image,jpackage-mac-base -pl object,hdfview \
+            echo "Creating ${{ matrix.arch }} app-image using Maven jpackage profile ($SIGN_STATUS)..."
+
+            # use base app-image profile + mac specific options + optional signing
+            mvn install -Pjpackage-app-image,jpackage-mac-base${SIGN_PROFILE} -pl object,hdfview \
               -Dmaven.test.skip=true \
               -Djacoco.skip=true \
               -Dpmd.skip=true \
@@ -258,7 +264,7 @@ jobs:
               -B
 
             if [ -d hdfview/target/dist/HDFView.app ]; then
-              echo "✓ ${{ matrix.arch }} app-image created successfully"
+              echo "✓ ${{ matrix.arch }} app-image created successfully ($SIGN_STATUS)"
               echo "App size: $(du -sh hdfview/target/dist/HDFView.app | cut -f1)"
             else
               echo "✗ app-image creation failed"
@@ -284,7 +290,16 @@ jobs:
 
         - name: Create and Sign DMG Installer
           run: |
-            echo "Creating DMG installer for ${{ matrix.arch }}..."
+            # Determine if we should sign the DMG
+            if [[ "${{ github.repository }}" == "HDFGroup/hdfview" && -n "${{ env.APPLE_CERTS_BASE64 }}" ]]; then
+              SHOULD_SIGN=true
+              SIGN_STATUS="signed"
+            else
+              SHOULD_SIGN=false
+              SIGN_STATUS="unsigned"
+            fi
+
+            echo "Creating DMG installer for ${{ matrix.arch }} ($SIGN_STATUS)..."
 
             # Use Maven jpackage-installer-mac profile (creates HDFView-{VERSION}.dmg)
             mvn package -Pjpackage-installer-mac -pl hdfview -DskipTests -B
@@ -297,11 +312,17 @@ jobs:
             echo "✓ DMG renamed to: $STANDARD_DMG_NAME"
             ls -lh *.dmg
 
-            # Produced installer must be signed separately from the app-image
-            codesign --force --sign "The HDF Group ($SIGNER)" \
-              --options runtime \
-              --timestamp \
-              "$STANDARD_DMG_NAME"
+            # Conditionally sign the DMG (only on canonical repo with certs)
+            if [ "$SHOULD_SIGN" = true ]; then
+              echo "Signing DMG..."
+              codesign --force --sign "The HDF Group ($SIGNER)" \
+                --options runtime \
+                --timestamp \
+                "$STANDARD_DMG_NAME"
+              echo "✓ DMG signed successfully"
+            else
+              echo "Skipping DMG signing (not on canonical repo or certs unavailable)"
+            fi
 
         - name: Notarize DMG Installer
           if: github.repository == 'HDFGroup/hdfview' && env.APPLE_CERTS_BASE64 != ''
@@ -357,4 +378,5 @@ jobs:
             name: dmg-macos-${{ matrix.arch }}-installer
             path: hdfview/target/dist/*.dmg
             retention-days: 30
+            if-no-files-found: error
     

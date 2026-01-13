@@ -563,7 +563,7 @@
       </build>
     </profile>
 
-    <!-- jpackage profile for macOS app-image (adds macOS-specific JVM options) -->
+    <!-- jpackage profile for macOS app-image (adds macOS-specific options) -->
     <!-- Must be explicitly activated: mvn verify -Pjpackage-app-image,jpackage-mac-base -->
     <!-- Only use when creating app-image, NOT when creating installers from app-image -->
     <profile>
@@ -584,7 +584,30 @@
                     <argument>${project.basedir}/../lib/macosx/distribution.entitlements</argument>
                     <argument>--java-options</argument>
                     <argument>-XstartOnFirstThread</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
+    <!-- jpackage profile for macOS code signing (separate for conditional use) -->
+    <!-- Only use on canonical repository with signing secrets configured -->
+    <!-- Activate with: -Pjpackage-app-image,jpackage-mac-base,jpackage-mac-sign -->
+    <profile>
+      <id>jpackage-mac-sign</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jpackage</id>
+                <configuration>
+                  <arguments combine.children="append">
                     <!-- macOS signing arguments -->
                     <argument>--mac-sign</argument>
                     <argument>--mac-signing-key-user-name</argument>
