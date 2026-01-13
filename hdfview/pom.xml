@@ -482,6 +482,8 @@
                     <argument>--linux-menu-group</argument>
                     <argument>Science</argument>
                     <argument>--linux-shortcut</argument>
+                    <argument>--linux-package-deps</argument>
+                    <argument>libgtk-3-0</argument>
                     <argument>--file-associations</argument>
                     <argument>${project.basedir}/../package_files/HDFViewHDF.properties</argument>
                     <argument>--file-associations</argument>
@@ -542,6 +544,8 @@
                     <argument>--linux-menu-group</argument>
                     <argument>Science</argument>
                     <argument>--linux-shortcut</argument>
+                    <argument>--linux-package-deps</argument>
+                    <argument>gtk3</argument>
                     <argument>--file-associations</argument>
                     <argument>${project.basedir}/../package_files/HDFViewHDF.properties</argument>
                     <argument>--file-associations</argument>
