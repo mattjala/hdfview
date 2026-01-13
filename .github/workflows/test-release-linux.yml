@@ -78,7 +78,7 @@ jobs:
         run: |
           echo "Downloading HDFView app binary from release: ${{ inputs.release_tag }}"
           gh release download ${{ inputs.release_tag }} \
-            --repo HDFGroup/hdfview \
+            --repo $GITHUB_REPOSITORY \
             --pattern "HDFView-*App-Linux.tar.gz"
 
           echo "Downloaded files:"
@@ -191,7 +191,7 @@ jobs:
         run: |
           echo "Downloading DEB installer from release: ${{ inputs.release_tag }}"
           gh release download ${{ inputs.release_tag }} \
-            --repo HDFGroup/hdfview \
+            --repo $GITHUB_REPOSITORY \
             --pattern "HDFView-*-Linux.deb"
 
           echo "Downloaded installer:"
@@ -330,7 +330,7 @@ jobs:
           dnf install -y gh
 
           gh release download ${{ inputs.release_tag }} \
-            --repo HDFGroup/hdfview \
+            --repo $GITHUB_REPOSITORY \
             --pattern "HDFView-*-Linux.rpm"
 
           echo "Downloaded installer:"
