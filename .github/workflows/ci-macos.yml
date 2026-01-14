@@ -101,7 +101,7 @@ jobs:
 
         # Extract inner tar.gz into hdf4/ directory
         cd "${{ github.workspace }}/hdf4"
-        tar -zxf HDF-*-Darwin.tar.gz --strip-components 1
+        tar -zxf HDF-${HDF4_VERSION}-Darwin.tar.gz --strip-components 1
 
         # Set HDF4 library path
         HDF4DIR=${{ github.workspace }}/hdf4/HDF_Group/HDF/
