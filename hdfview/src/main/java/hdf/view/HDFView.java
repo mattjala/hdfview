@@ -1118,7 +1118,6 @@ public class HDFView implements DataViewManager {
         Font font = null;
 
         try {
-            // Use the display associated with the parent shell for better encapsulation
             font = new Font(parentShell.getDisplay(), ViewProperties.getFontType(),
                             ViewProperties.getFontSize(), SWT.NORMAL);
         }
