@@ -903,7 +903,7 @@ public class HDFView implements DataViewManager {
         new MenuItem(toolsMenu, SWT.SEPARATOR);
 
         item = new MenuItem(toolsMenu, SWT.PUSH);
-        item.setText("User &Options");
+        item.setText("&Preferences...");
         item.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e)
@@ -1032,35 +1032,23 @@ public class HDFView implements DataViewManager {
 
         setEnabled(Arrays.asList(windowMenu.getItems()), false);
 
-        // Setup macOS-specific application menu handlers
-        // On macOS, the system automatically creates "About HDFView" and "Preferences..." menu items
-        // in the application menu, but we need to hook them up to our dialogs
-        setupMacOSMenuHandlers(shell);
+        // Set up handlers for system menu items (e.g., About and Preferences on macOS)
+        setupSystemMenuHandlers(shell);
 
         log.info("Menubar created");
     }
 
     /**
-     * Setup macOS-specific application menu handlers.
-     * On macOS, the system automatically creates menu items like "About HDFView" and "Preferences..."
-     * in the application menu. We need to attach listeners to the specific menu items.
+     * Sets up handlers for system menu items (SWT.ID_ABOUT and SWT.ID_PREFERENCES).
+     * On platforms that provide a system menu (e.g., macOS application menu), this connects
+     * the platform-specific menu items to the application's dialogs. On other platforms,
+     * the system menu will be null and these handlers are safely ignored.
      *
      * @param shell the main shell to attach menu handlers to
      */
-    private void setupMacOSMenuHandlers(final Shell shell)
+    private void setupSystemMenuHandlers(final Shell shell)
     {
-        // Check if we're on macOS using centralized detection
-        if (!ViewProperties.isMacOS()) {
-            log.debug("Not on macOS, skipping macOS-specific menu setup");
-            return;
-        }
-
-        log.info("Setting up macOS application menu handlers");
-
-        final Display display = shell.getDisplay();
-
-        // Retrieve the system menu (the Application menu on macOS)
-        Menu systemMenu = display.getSystemMenu();
+        Menu systemMenu = shell.getDisplay().getSystemMenu();
 
         if (systemMenu != null) {
             MenuItem[] items = systemMenu.getItems();
@@ -1069,41 +1057,26 @@ public class HDFView implements DataViewManager {
                 int id = item.getID();
 
                 if (id == SWT.ID_ABOUT) {
-                    // Hook up the "About HDFView" menu item
                     item.addListener(SWT.Selection, event -> {
-                        log.debug("macOS About menu triggered");
-                        // Use asyncExec to ensure the menu is closed before opening the modal dialog
-                        display.asyncExec(() -> {
-                            if (!shell.isDisposed()) {
-                                new AboutDialog(shell).open();
-                            }
-                        });
+                        log.debug("System About menu triggered");
+                        new AboutDialog(shell).open();
                     });
                 }
                 else if (id == SWT.ID_PREFERENCES) {
-                    // Hook up the "Preferences..." menu item
                     item.addListener(SWT.Selection, event -> {
-                        log.debug("macOS Preferences menu triggered");
-                        // Use asyncExec to ensure the menu is closed before opening the modal dialog
-                        display.asyncExec(() -> {
-                            if (!shell.isDisposed()) {
-                                openUserOptionsDialog(shell);
-                            }
-                        });
+                        log.debug("System Preferences menu triggered");
+                        openUserOptionsDialog(shell);
                     });
                 }
             }
-        }
-        else {
-            log.warn("Could not access system menu to attach macOS handlers");
-        }
 
-        log.info("macOS application menu handlers configured");
+            log.info("System menu handlers configured");
+        }
     }
 
     /**
-     * Opens the User Options dialog. Extracted to a separate method for reuse
-     * by both the Tools menu and the macOS Preferences menu item.
+     * Opens the Preferences dialog. Extracted to a separate method for reuse
+     * by both the Tools menu and the system Preferences menu item.
      *
      * @param parentShell the parent shell for the dialog
      */
