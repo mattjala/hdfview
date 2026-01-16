@@ -908,51 +908,7 @@ public class HDFView implements DataViewManager {
             @Override
             public void widgetSelected(SelectionEvent e)
             {
-                // Create the preference manager
-                PreferenceManager mgr = new PreferenceManager();
-
-                // Create the nodes
-                UserOptionsNode one   = new UserOptionsNode("general", new UserOptionsGeneralPage());
-                UserOptionsNode two   = new UserOptionsNode("hdf", new UserOptionsHDFPage());
-                UserOptionsNode three = new UserOptionsNode("modules", new UserOptionsViewModulesPage());
-
-                // Add the nodes
-                mgr.addToRoot(one);
-                mgr.addToRoot(two);
-                mgr.addToRoot(three);
-
-                // Create the preferences dialog
-                userOptionDialog = new UserOptionsDialog(shell, mgr, rootDir);
-
-                // Set the preference store
-                userOptionDialog.setPreferenceStore(props);
-                userOptionDialog.create();
-
-                // Open the dialog
-                userOptionDialog.open();
-
-                // TODO(HDFView) [2025-12]: Fix work directory change detection - isWorkDirChanged() not
-                // properly exposed. Currently unconditionally overwrites currentDir after user options dialog
-                // closes. Should only update if user actually changed the working directory setting. Need to
-                // properly expose isWorkDirChanged() method or add public getter to UserOptionsDialog.
-                // Impact: Unnecessary directory updates may confuse users or cause unexpected behavior.
-                // correctly. if (userOptionDialog.isWorkDirChanged()) this will always overwrite the
-                // currentDir until isWorkDirChanged() is fixed
-                currentDir = ViewProperties.getWorkDir();
-
-                // if (userOptionDialog.isFontChanged()) {
-                Font font = null;
-
-                try {
-                    font = new Font(display, ViewProperties.getFontType(), ViewProperties.getFontSize(),
-                                    SWT.NORMAL);
-                }
-                catch (Exception ex) {
-                    font = null;
-                }
-
-                log.trace("update fonts");
-                updateFont(font);
+                openUserOptionsDialog(shell);
             }
         });
 
@@ -1076,7 +1032,149 @@ public class HDFView implements DataViewManager {
 
         setEnabled(Arrays.asList(windowMenu.getItems()), false);
 
+        // Setup macOS-specific application menu handlers
+        // On macOS, the system automatically creates "About HDFView" and "Preferences..." menu items
+        // in the application menu, but we need to hook them up to our dialogs
+        setupMacOSMenuHandlers(shell);
+
         log.info("Menubar created");
+    }
+
+    /**
+     * Setup macOS-specific application menu handlers.
+     * On macOS, the system automatically creates menu items like "About HDFView" and "Preferences..."
+     * in the application menu. We need to attach listeners to the specific menu items.
+     *
+     * @param shell the main shell to attach menu handlers to
+     */
+    private void setupMacOSMenuHandlers(final Shell shell)
+    {
+        // Check if we're on macOS using centralized detection
+        if (!ViewProperties.isMacOS()) {
+            log.debug("Not on macOS, skipping macOS-specific menu setup");
+            return;
+        }
+
+        log.info("Setting up macOS application menu handlers");
+
+        final Display display = shell.getDisplay();
+
+        // Retrieve the system menu (the Application menu on macOS)
+        Menu systemMenu = display.getSystemMenu();
+
+        if (systemMenu != null) {
+            MenuItem[] items = systemMenu.getItems();
+
+            for (MenuItem item : items) {
+                int id = item.getID();
+
+                if (id == SWT.ID_ABOUT) {
+                    // Hook up the "About HDFView" menu item
+                    item.addListener(SWT.Selection, new Listener() {
+                        @Override
+                        public void handleEvent(Event event)
+                        {
+                            log.debug("macOS About menu triggered");
+                            // Use asyncExec to ensure the menu is closed before opening the modal dialog
+                            display.asyncExec(new Runnable() {
+                                @Override
+                                public void run()
+                                {
+                                    if (!shell.isDisposed()) {
+                                        new AboutDialog(shell).open();
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                else if (id == SWT.ID_PREFERENCES) {
+                    // Hook up the "Preferences..." menu item
+                    item.addListener(SWT.Selection, new Listener() {
+                        @Override
+                        public void handleEvent(Event event)
+                        {
+                            log.debug("macOS Preferences menu triggered");
+                            // Use asyncExec to ensure the menu is closed before opening the modal dialog
+                            display.asyncExec(new Runnable() {
+                                @Override
+                                public void run()
+                                {
+                                    if (!shell.isDisposed()) {
+                                        openUserOptionsDialog(shell);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        }
+        else {
+            log.warn("Could not access system menu to attach macOS handlers");
+        }
+
+        log.info("macOS application menu handlers configured");
+    }
+
+    /**
+     * Opens the User Options dialog. Extracted to a separate method for reuse
+     * by both the Tools menu and the macOS Preferences menu  item.
+     *
+     * @param parentShell the parent shell for the dialog
+     */
+    private void openUserOptionsDialog(Shell parentShell)
+    {
+        // Create the preference manager
+        PreferenceManager mgr = new PreferenceManager();
+
+        // Create the preference nodes with semantic names
+        UserOptionsNode generalNode = new UserOptionsNode("general", new UserOptionsGeneralPage());
+        UserOptionsNode hdfNode     = new UserOptionsNode("hdf", new UserOptionsHDFPage());
+        UserOptionsNode modulesNode = new UserOptionsNode("modules", new UserOptionsViewModulesPage());
+
+        // Add the nodes
+        mgr.addToRoot(generalNode);
+        mgr.addToRoot(hdfNode);
+        mgr.addToRoot(modulesNode);
+
+        // Create the preferences dialog using the provided parent shell
+        userOptionDialog = new UserOptionsDialog(parentShell, mgr, rootDir);
+
+        // Set the preference store
+        userOptionDialog.setPreferenceStore(props);
+        userOptionDialog.create();
+
+        // Open the dialog
+        userOptionDialog.open();
+
+        // TODO(HDFView) [2025-01]: TECHNICAL DEBT - Fix work directory change detection
+        // Problem: isWorkDirChanged() not properly exposed by UserOptionsDialog
+        // Current behavior: Unconditionally overwrites currentDir after dialog closes
+        // Desired behavior: Only update if user actually changed the working directory
+        // Solution: Expose isWorkDirChanged() as public getter in UserOptionsDialog
+        // Impact: Unnecessary directory updates may confuse users or cause unexpected behavior
+        // Note: This issue was preserved during macOS menu refactoring (2025-01-13)
+        currentDir = ViewProperties.getWorkDir();
+
+        // if (userOptionDialog.isFontChanged()) {
+        Font font = null;
+
+        try {
+            // Use the display associated with the parent shell for better encapsulation
+            font = new Font(parentShell.getDisplay(), ViewProperties.getFontType(),
+                            ViewProperties.getFontSize(), SWT.NORMAL);
+        }
+        catch (Exception ex) {
+            // Log the exception to aid debugging - font creation failures should be investigated
+            log.warn("Failed to create font with type='{}' size={}: {}", ViewProperties.getFontType(),
+                     ViewProperties.getFontSize(), ex.getMessage());
+            log.debug("Font creation exception details", ex);
+            font = null;
+        }
+
+        log.trace("update fonts");
+        updateFont(font);
     }
 
     private void createToolbar(final Shell shell)
