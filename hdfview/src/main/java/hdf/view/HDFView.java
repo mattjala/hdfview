@@ -1074,8 +1074,8 @@ public class HDFView implements DataViewManager {
                         log.debug("macOS About menu triggered");
                         // Use asyncExec to ensure the menu is closed before opening the modal dialog
                         display.asyncExec(() -> {
-                            if (!shell.isDisposed()) {
-                                new AboutDialog(shell).open();
+                            if (!mainWindow.isDisposed()) {
+                                new AboutDialog(mainWindow).open();
                             }
                         });
                     });
@@ -1103,7 +1103,7 @@ public class HDFView implements DataViewManager {
 
     /**
      * Opens the User Options dialog. Extracted to a separate method for reuse
-     * by both the Tools menu and the macOS Preferences menu  item.
+     * by both the Tools menu and the macOS Preferences menu item.
      *
      * @param parentShell the parent shell for the dialog
      */
