@@ -1070,42 +1070,26 @@ public class HDFView implements DataViewManager {
 
                 if (id == SWT.ID_ABOUT) {
                     // Hook up the "About HDFView" menu item
-                    item.addListener(SWT.Selection, new Listener() {
-                        @Override
-                        public void handleEvent(Event event)
-                        {
-                            log.debug("macOS About menu triggered");
-                            // Use asyncExec to ensure the menu is closed before opening the modal dialog
-                            display.asyncExec(new Runnable() {
-                                @Override
-                                public void run()
-                                {
-                                    if (!shell.isDisposed()) {
-                                        new AboutDialog(shell).open();
-                                    }
-                                }
-                            });
-                        }
+                    item.addListener(SWT.Selection, event -> {
+                        log.debug("macOS About menu triggered");
+                        // Use asyncExec to ensure the menu is closed before opening the modal dialog
+                        display.asyncExec(() -> {
+                            if (!shell.isDisposed()) {
+                                new AboutDialog(shell).open();
+                            }
+                        });
                     });
                 }
                 else if (id == SWT.ID_PREFERENCES) {
                     // Hook up the "Preferences..." menu item
-                    item.addListener(SWT.Selection, new Listener() {
-                        @Override
-                        public void handleEvent(Event event)
-                        {
-                            log.debug("macOS Preferences menu triggered");
-                            // Use asyncExec to ensure the menu is closed before opening the modal dialog
-                            display.asyncExec(new Runnable() {
-                                @Override
-                                public void run()
-                                {
-                                    if (!shell.isDisposed()) {
-                                        openUserOptionsDialog(shell);
-                                    }
-                                }
-                            });
-                        }
+                    item.addListener(SWT.Selection, event -> {
+                        log.debug("macOS Preferences menu triggered");
+                        // Use asyncExec to ensure the menu is closed before opening the modal dialog
+                        display.asyncExec(() -> {
+                            if (!shell.isDisposed()) {
+                                openUserOptionsDialog(shell);
+                            }
+                        });
                     });
                 }
             }
