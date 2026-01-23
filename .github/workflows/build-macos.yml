@@ -253,9 +253,36 @@ jobs:
 
             echo "Creating ${{ matrix.arch }} app-image using Maven jpackage profile ($SIGN_STATUS)..."
 
-            # use base app-image profile + mac specific options + optional signing
-            mvn install -Pjpackage-app-image,jpackage-mac-base${SIGN_PROFILE} -pl object,hdfview \
-              -Dmaven.test.skip=true \
+            # Step 1: Install repository module
+            echo "Installing repository module..."
+            mvn clean install -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -pl repository \
+              -B
+
+            # Step 2: Install all modules (including parent POM)
+            echo "Installing all modules..."
+            mvn clean install -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -B
+
+            # Step 3: Package
+            echo "Packaging..."
+            mvn package -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -B
+
+            # Step 4: Run verify phase with jpackage profiles to create app-image
+            echo "Running verify phase with jpackage profiles to create app-image..."
+            mvn verify -Pjpackage-app-image,jpackage-mac-base${SIGN_PROFILE} \
+              -pl hdfview \
+              -DskipTests \
               -Djacoco.skip=true \
               -Dpmd.skip=true \
               -Ddependency-check.skip=true \

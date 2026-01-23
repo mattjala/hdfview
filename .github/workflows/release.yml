@@ -58,22 +58,15 @@ jobs:
     - name: Read VERSION file
       id: read-version
       run: |
-        # Extract HDFVIEW_VERSION from VERSION file (ignoring comments)
-        HDFVIEW_VERSION=$(grep "^HDFVIEW_VERSION=" VERSION | cut -d'=' -f2)
-        echo "version=$HDFVIEW_VERSION" >> $GITHUB_OUTPUT
-
-    - name: Extract version number
-      id: extract-version
-      run: |
-        # Version is already numeric from HDFVIEW_VERSION property
-        VERSION_BASE="${{ steps.read-version.outputs.version }}"
-        echo "VERSION_NUMBER=$VERSION_BASE" >> $GITHUB_OUTPUT
+        # Extract VERSION (full tag) from VERSION file (ignoring comments)
+        VERSION_TAG=$(grep "^VERSION=" VERSION | cut -d'=' -f2)
+        echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
 
     - name: Construct tag name
       id: construct-tag
       run: |
         if [[ "${{ steps.validate-input.outputs.BUILD_TYPE }}" == "release" ]]; then
-          TAG_NAME="HDFView-${{ steps.extract-version.outputs.VERSION_NUMBER }}"
+          TAG_NAME="${{ steps.read-version.outputs.version_tag }}"
         else
           TAG_NAME="snapshot"
         fi

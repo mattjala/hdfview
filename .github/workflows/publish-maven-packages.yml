@@ -227,6 +227,48 @@ jobs:
           </settings>
           EOF
 
+      # Clear existing artifacts to avoid conflicts
+      - name: Delete Existing Package Versions
+        run: |
+          # Extract version from pom.xml
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Package version: $VERSION"
+
+          # GitHub repository owner and name
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+
+          # Function to delete package version if it exists
+          delete_package_version() {
+            local PACKAGE_NAME=$1
+            echo "Checking for existing version of package: $PACKAGE_NAME"
+
+            # List all versions of the package
+            VERSIONS_JSON=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/users/$OWNER/packages/maven/$PACKAGE_NAME/versions" 2>/dev/null || echo "[]")
+
+            # Find version ID matching our version
+            VERSION_ID=$(echo "$VERSIONS_JSON" | jq -r ".[] | select(.name==\"$VERSION\") | .id" 2>/dev/null)
+
+            if [ -n "$VERSION_ID" ] && [ "$VERSION_ID" != "null" ]; then
+              echo "Found existing version $VERSION (ID: $VERSION_ID) for $PACKAGE_NAME, deleting..."
+              curl -X DELETE \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/users/$OWNER/packages/maven/$PACKAGE_NAME/versions/$VERSION_ID"
+              echo "Deleted version $VERSION of $PACKAGE_NAME"
+            else
+              echo "No existing version $VERSION found for $PACKAGE_NAME, proceeding with publish"
+            fi
+          }
+
+          # Delete both packages if they exist
+          delete_package_version "org.hdfgroup.hdfview.object"
+          delete_package_version "org.hdfgroup.hdfview.hdfview"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish to GitHub Packages
         run: |
           mvn deploy -B \
