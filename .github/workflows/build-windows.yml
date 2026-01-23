@@ -260,9 +260,37 @@ jobs:
       - name: Build with Maven
         shell: pwsh
         run: |
-          Write-Host "Building HDFView with Maven..."
-          # Build object and hdfview modules, stop at package phase to avoid verify/PMD
-          mvn package -pl object,hdfview "-Dmaven.test.skip=true" "-Dhdf5.version=$env:HDF5_VERSION" "-Dhdf.version=$env:HDF4_VERSION" -B
+          Write-Host "Building HDFView with Maven (standard build process)..."
+
+          # Step 1: Install repository module
+          Write-Host "Installing repository module..."
+          mvn clean install "-DskipTests" `
+            "-Djacoco.skip=true" `
+            "-Dpmd.skip=true" `
+            "-Ddependency-check.skip=true" `
+            "-pl" "repository" `
+            -B
+
+          # Step 2: Install all modules (including parent POM)
+          Write-Host "Installing all modules..."
+          mvn clean install "-DskipTests" `
+            "-Djacoco.skip=true" `
+            "-Dpmd.skip=true" `
+            "-Ddependency-check.skip=true" `
+            -B
+
+          # Step 3: Package
+          Write-Host "Packaging..."
+          mvn package "-DskipTests" `
+            "-Djacoco.skip=true" `
+            "-Dpmd.skip=true" `
+            "-Ddependency-check.skip=true" `
+            -B
+
+          # Step 4: Run verify phase with jpackage profiles to create app-image
+          # Note: This job creates a basic binary archive, not a full app-image
+          # So we skip the verify step here (it's done in build-windows-app job)
+          Write-Host "✓ Build complete"
 
       - name: Extract version from VERSION file
         id: get-version-binary
@@ -495,15 +523,32 @@ jobs:
         - name: Build and Package Application
           shell: pwsh
           run: |
-            Write-Host "Building HDFView with Maven..."
-            # Install parent POM first (required for child module resolution)
-            mvn install -B -N "-Ddependency-check.skip=true"
-  
-            # Install object and hdfview modules (needed for jpackage)
-            mvn install -B -pl object,hdfview -DskipTests "-Ddependency-check.skip=true"
-  
-            # Package application
-            mvn package -DskipTests -B
+            Write-Host "Building HDFView with Maven (standard build process)..."
+
+            # Step 1: Install repository module
+            Write-Host "Installing repository module..."
+            mvn clean install "-DskipTests" `
+              "-Djacoco.skip=true" `
+              "-Dpmd.skip=true" `
+              "-Ddependency-check.skip=true" `
+              "-pl" "repository" `
+              -B
+
+            # Step 2: Install all modules (including parent POM)
+            Write-Host "Installing all modules..."
+            mvn clean install "-DskipTests" `
+              "-Djacoco.skip=true" `
+              "-Dpmd.skip=true" `
+              "-Ddependency-check.skip=true" `
+              -B
+
+            # Step 3: Package
+            Write-Host "Packaging..."
+            mvn package "-DskipTests" `
+              "-Djacoco.skip=true" `
+              "-Dpmd.skip=true" `
+              "-Ddependency-check.skip=true" `
+              -B
   
         - name: Prepare jpackage Input Directory
           shell: pwsh
@@ -614,22 +659,24 @@ jobs:
           shell: pwsh
           run: |
             Write-Host "Creating distributable application package with jpackage..."
-  
-            # Create app-image using jpackage profile
-            # -pl object,hdfview: Build object and hdfview modules (skip repository)
-            # -Dmaven.test.skip=true: Skip test compilation and execution
+
+            # Step 4: Run verify phase with jpackage profiles to create app-image
+            # -pl hdfview: Build hdfview module only
+            # -DskipTests: Skip test execution
             # -Djacoco.skip=true: Skip JaCoCo (not needed for release builds)
             # -Dpmd.skip=true: Skip PMD (static analysis not needed for release)
             # -Ddependency-check.skip=true: Skip OWASP (runs in separate security workflow)
             # -Dmaven.antrun.skip=true: Skip Ant plugin (we manually prepared the input directory)
-            mvn verify "-Pjpackage-app-image,jpackage-win-base" "-pl" "object,hdfview" `
-              "-Dmaven.test.skip=true" `
+            Write-Host "Running verify phase with jpackage profiles to create app-image..."
+            mvn verify "-Pjpackage-app-image,jpackage-win-base" `
+              "-pl" "hdfview" `
+              "-DskipTests" `
               "-Djacoco.skip=true" `
               "-Dpmd.skip=true" `
               "-Ddependency-check.skip=true" `
               "-Dmaven.antrun.skip=true" `
               -B
-  
+
             Write-Host "Verifying jpackage output..."
             if (Test-Path "hdfview\target\dist\HDFView") {
               Write-Host "✓ jpackage app-image created successfully"

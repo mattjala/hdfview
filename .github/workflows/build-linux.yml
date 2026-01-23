@@ -263,43 +263,53 @@ jobs:
 
         - name: Build and Package Application
           run: |
-            echo "Building HDFView with Maven..."
-            # Install parent POM first (required for child module resolution)
-            mvn install -B -N -Ddependency-check.skip=true
+            echo "Building HDFView with Maven (standard build process)..."
 
-            # Install object and hdfview modules (needed for jpackage)
-            mvn install -B -pl object,hdfview -DskipTests -Ddependency-check.skip=true
+            # Step 1: Install repository module
+            echo "Installing repository module..."
+            mvn clean install -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -pl repository \
+              -B
 
-            # Package application
-            mvn package -DskipTests -B
+            # Step 2: Install all modules (including parent POM)
+            echo "Installing all modules..."
+            mvn clean install -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -B
 
-        - name: Create jpackage App Image
-          run: |
-            echo "Creating distributable application package with jpackage..."
+            # Step 3: Package
+            echo "Packaging..."
+            mvn package -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -B
 
-            # Create app-image using jpackage profile
-            # -pl object,hdfview: Build object and hdfview modules (skip repository)
-            # -Dmaven.test.skip=true: Skip test compilation and execution
-            # -Djacoco.skip=true: Skip JaCoCo (not needed for release builds)
-            # -Dpmd.skip=true: Skip PMD (static analysis not needed for release)
-            # -Ddependency-check.skip=true: Skip OWASP (runs in separate security workflow)
-            mvn verify -Pjpackage-app-image -pl object,hdfview \
-            -Dmaven.test.skip=true \
-            -Djacoco.skip=true \
-            -Dpmd.skip=true \
-            -Ddependency-check.skip=true \
-            -B
+            # Step 4: Run verify phase with jpackage profiles to create app-image
+            echo "Running verify phase with jpackage profiles to create app-image..."
+            mvn verify -Pjpackage-app-image \
+              -pl hdfview \
+              -DskipTests \
+              -Djacoco.skip=true \
+              -Dpmd.skip=true \
+              -Ddependency-check.skip=true \
+              -B
 
             echo "Verifying jpackage output..."
             if [ -d hdfview/target/dist/HDFView ]; then
-            echo "✓ jpackage app-image created successfully"
-            echo "Package size: $(du -sh hdfview/target/dist/HDFView | cut -f1)"
-            echo "Native libraries: $(find hdfview/target/dist/HDFView/lib/app -name "*.so" 2>/dev/null | wc -l) .so files"
-            echo "JAR files: $(find hdfview/target/dist/HDFView/lib/app -name "*.jar" 2>/dev/null | wc -l) JARs"
-            echo "HDF5 plugins: $(ls -1 hdfview/target/dist/HDFView/lib/app/plugin/*.so 2>/dev/null | wc -l) plugins"
+              echo "✓ jpackage app-image created successfully"
+              echo "Package size: $(du -sh hdfview/target/dist/HDFView | cut -f1)"
+              echo "Native libraries: $(find hdfview/target/dist/HDFView/lib/app -name "*.so" 2>/dev/null | wc -l) .so files"
+              echo "JAR files: $(find hdfview/target/dist/HDFView/lib/app -name "*.jar" 2>/dev/null | wc -l) JARs"
+              echo "HDF5 plugins: $(ls -1 hdfview/target/dist/HDFView/lib/app/plugin/*.so 2>/dev/null | wc -l) plugins"
             else
-            echo "✗ jpackage app-image creation failed"
-            exit 1
+              echo "✗ jpackage app-image creation failed"
+              exit 1
             fi
 
         - name: Extract version from VERSION file
