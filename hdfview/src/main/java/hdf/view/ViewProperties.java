@@ -48,6 +48,15 @@ public class ViewProperties extends PreferenceStore {
 
     private static final Logger log = LoggerFactory.getLogger(ViewProperties.class);
 
+    /** Cached OS detection - computed once at class load time. */
+    private static final boolean IS_MAC_OS;
+
+    static
+    {
+        String osName = System.getProperty("os.name");
+        IS_MAC_OS     = osName != null && osName.toLowerCase().contains("mac");
+    }
+
     /** the version of the HDFViewer. */
     public static final String VERSION = HDFVersions.getPropertyVersionView();
 
@@ -213,8 +222,6 @@ public class ViewProperties extends PreferenceStore {
 
     /** the timer refreshrate in msec. */
     private static int timerRefresh = 10000;
-
-    private static boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
 
     /**
      * flag to indicate if auto contrast is used in image processing. Do not use
@@ -1885,6 +1892,16 @@ public class ViewProperties extends PreferenceStore {
      * @param trefresh the timer refresh
      */
     public static void setTimerRefresh(int trefresh) { timerRefresh = trefresh; }
+
+    /**
+     * Check if the application is running on macOS.
+     * Uses case-insensitive substring matching for robust detection across different
+     * JRE implementations and OS version naming variations (Mac OS X, macOS, etc.).
+     * The OS detection is cached at class load time for performance.
+     *
+     * @return true if running on macOS, false otherwise
+     */
+    public static boolean isMacOS() { return IS_MAC_OS; }
 
     /**
      * Get the font size.
