@@ -21,6 +21,6 @@ Update the `<version>` tags in the following files:
 - **object/pom.xml** - Parent version
 - **hdfview/pom.xml** - Parent version and object dependency version
 
-For releases, use the version without `-SNAPSHOT` suffix (e.g., `3.5.0`).
-For development, use the version with `-SNAPSHOT` suffix (e.g., `99.99.99-SNAPSHOT` or `3.5.99-SNAPSHOT`).
+For releases, use the non-99 version (e.g., `3.5.0`).
+For development, use the most recent '99' version (e.g., `99.99.99` or `3.5.99`).
 
