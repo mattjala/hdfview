@@ -1,4 +1,4 @@
-HDFView version 3.4.0
+HDFView version 3.4.1
 
 # 🔺 HDFView Changelog
 All notable changes to this project will be documented in this file. This document describes the differences between this release and the previous HDFView release, platforms tested, and known problems in this release.
@@ -15,58 +15,19 @@ All notable changes to this project will be documented in this file. This docume
 * [Platforms Tested](#%EF%B8%8F-platforms-tested)
 * [Known Problems](#-known-problems)
 
-# 🔆 Executive Summary: HDFView Version 3.4.0
+# 🔆 Executive Summary: HDFView Version 3.4.1
 
-## Enhanced Features:
-
-* **Float16 Datatype Support**: Added comprehensive support for operating with float16 datatypes
-* **Plugin Path Configuration**: New user option for editing the plugin path and managing plugins
-
-## Updated Foundation:
-
-> [!IMPORTANT]
->
-> - Built and tested with **HDF 4.3.X** and **HDF5 2.Y.Z**
-> - Built and tested with **OpenJDK 21**
-> - Uses Java modules for improved modularity
-> - Utilizes newest `jpackage` for distribution
-
-# 🚀 New Features & Improvements
-
-## Major Enhancements
-
-* Build system converted to Maven
-
-* **[GH #117](https://github.com/HDFGroup/hdfview/issues/117)** - Add User Option for editing the plugin path and include plugins
-* **[GH #138](https://github.com/HDFGroup/hdfview/issues/138)** - Add Support for operating with float16 and complex datatypes
-
-# 🪲 Bug Fixes
-
-## Major Bug Fixes
-
-* **HDFVIEW-284** - Fixed crashes on NETCDF-4 grids
-
-  The problem was that references in variable-length containers were handled like strings. Upon investigation, the problem found was that references in any container were handled like strings.
-
-  The table display code for vlen references also changed to account for the changes which fixed the hdf5 Java API. The fix required that variable-length types in the Java wrappers in the hdf5 library for read and write also be fixed.
-
-  Related work:
-  - **HDFView-221** - Add support for true Variable-length types in Java
-  - **HDFView-222** - Fixed the read/write support for variable-length in the Java wrappers. This fix involved handling the data object as a list of lists and using the datatype of the list.
-  - **HDFView-222** - Fixed the object library to handle the List of Lists concept
-  - **HDFView-223** - Updated the DataProviders, DataDisplayConverters and DataValidators to work with variable-length List of Lists
+This is small release to patch some visual bugs discovered after the publication of version 3.4.0.
 
 ## Minor Bug Fixes
 
-* **[GH #171](https://github.com/HDFGroup/hdfview/issues/171)** - HDFView fails to find input files on command line when using relative paths
+* **[GH #456](https://github.com/HDFGroup/hdfview/issues/456)** - On MacOS, the top-level "settings" option did not open the User Options menu.
 
-* **[GH #387](https://github.com/HDFGroup/hdfview/issues/387)** (checkHDF5Filters shows 'NONE') Replace corrupted tfilters.h5 test data file with correct version.
-
-* **[GH #352](https://github.com/HDFGroup/hdfview/issues/352)** (isn't displaying attribute values correctly) Incorrectly using the array value as a character limit.
+* **[GH #460](https://github.com/HDFGroup/hdfview/issues/460)** - The GUI window always displayed the application version as "HDFView-99.99.99".
 
 # ☑️ Platforms Tested
 
-HDFView is tested on the following platforms:
+HDFView is built and tested on the following platforms with **HDF 4.3.1** and **HDF5 2.0.0**:
 
 * Linux (x86_64, aarch64)
 * Windows
@@ -77,19 +38,5 @@ Current test results and detailed platform information are available in the [Git
 # ⛔ Known Problems
 
 * **PATH pointing to other HDF4/5 installations**: If the environment path points to a directory including HDF4/5 installations, then these installations may be loaded by HDFView instead of the bundled HDF4/5 versions, causing the application to fail to launch with a "failed to launch JVM" error. This can be resolved by either removing those directories from the PATH, or removing the HDF4/5 installations from that directory.
-
-* **Large Dataset Handling**: HDFView currently cannot nicely handle large datasets when using the default display mode, as the data is loaded in its entirety. To view large datasets, it is recommended to right click on a data object and use the "Open As" menu item, where a subset of data to view can be selected.
-
-* **Object/Region References in Compound Types**: Object/region references can't be opened by a double-click or by right-clicking and choosing "Show As Table/Image" when inside a compound datatype.
-
-* **Export Dataset in Read-Only Mode**: If a file is opened in read-only mode, right-clicking on a dataset in the tree view and choosing any of the options under the "Export Dataset" menu item will fail with a message of 'Unable to export dataset: Unable to open file'. The current workaround is to re-open the file in read/write mode.
-
-* **Recent Files Button on Mac**: The 'Recent Files' button does not work on Mac due to a cross-platform issue with SWT.
-
-* **PaletteView Selection**: Selecting and changing individual points in PaletteView for an image palette is broken.
-
-* **Source Rebuild Requirements**: Logging and optional HDF4 requires rebuilds from source.
-
-* **Mac File Display**: Automatically opening HDFView and displaying a file selected still does not display the file on a mac.
 
 Please report any new problems found to the [HDFView issue tracker](https://github.com/HDFGroup/hdfview/issues).
