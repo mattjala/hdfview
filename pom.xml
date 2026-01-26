@@ -444,7 +444,7 @@
                   <file>VERSION</file>
                 </files>
               </configuration>
-              <inherited>false</inherited>
+              <inherited>true</inherited>
             </execution>
             <!-- Read user build.properties second -->
             <execution>
@@ -458,7 +458,7 @@
                   <file>${user.properties.file}</file>
                 </files>
               </configuration>
-              <inherited>false</inherited>
+              <inherited>true</inherited>
             </execution>
           </executions>
         </plugin>
