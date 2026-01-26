@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'HDFView release tag (e.g., HDFView-3.4.0, snapshot)'
+        description: 'HDFView release tag (e.g., v3.4.1, snapshot)'
         type: string
         required: true
         default: 'snapshot'
@@ -21,7 +21,7 @@ on:
   workflow_call:
     inputs:
       release_tag:
-        description: 'HDFView release tag (e.g., HDFView-3.4.0, snapshot)'
+        description: 'HDFView release tag (e.g., v3.4.1, snapshot)'
         type: string
         required: true
       hdf4_version:

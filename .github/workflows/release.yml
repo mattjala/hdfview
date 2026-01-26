@@ -31,7 +31,8 @@ jobs:
   determine-version:
     runs-on: ubuntu-latest
     outputs:
-      version_tag: ${{ steps.construct-tag.outputs.VERSION_TAG }}
+      hdfview_version_with_prefix: ${{ steps.construct-tag.outputs.hdfview_version_with_prefix }}
+      hdfview_version_without_prefix: ${{ steps.construct-tag.outputs.hdfview_version_without_prefix }}
       build_type: ${{ steps.validate-input.outputs.BUILD_TYPE }}
       hdf4_release_tag: ${{ steps.construct-hdf-tags.outputs.HDF4_RELEASE_TAG }}
       hdf5_release_tag: ${{ steps.construct-hdf-tags.outputs.HDF5_RELEASE_TAG }}
@@ -55,23 +56,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Read VERSION file
-      id: read-version
-      run: |
-        # Extract VERSION (full tag) from VERSION file (ignoring comments)
-        VERSION_TAG=$(grep "^VERSION=" VERSION | cut -d'=' -f2)
-        echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
-
-    - name: Construct tag name
+    - name: Construct tag name from VERSION file
       id: construct-tag
       run: |
+        EXTRACTED_HDFVIEW_VERSION=$(grep "^HDFVIEW_VERSION=" VERSION | cut -d'=' -f2)
+        echo "hdfview_version_without_prefix=$EXTRACTED_HDFVIEW_VERSION" >> $GITHUB_OUTPUT
+        echo "HDFView version (without prefix): $EXTRACTED_HDFVIEW_VERSION"
+
         if [[ "${{ steps.validate-input.outputs.BUILD_TYPE }}" == "release" ]]; then
-          TAG_NAME="${{ steps.read-version.outputs.version_tag }}"
+          # Extract VERSION (full tag) from VERSION file for release builds
+          EXTRACTED_VERSION=$(grep "^VERSION=" VERSION | cut -d'=' -f2)
         else
-          TAG_NAME="snapshot"
+          # Use "snapshot" for snapshot builds
+          EXTRACTED_VERSION="snapshot"
         fi
-        echo "VERSION_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
-        echo "Constructed tag name: $TAG_NAME"
+        echo "hdfview_version_with_prefix=$EXTRACTED_VERSION" >> $GITHUB_OUTPUT
+        echo "HDFView version with prefix: $EXTRACTED_VERSION"
 
     - name: Construct HDF library release tags
       id: construct-hdf-tags
@@ -181,7 +181,7 @@ jobs:
       artifact_basename: ${{ needs.call-workflow-tarball.outputs.artifact_basename }}
       file_branch: ${{ needs.call-workflow-tarball.outputs.file_branch }}
       file_sha: ${{ needs.call-workflow-tarball.outputs.file_sha }}
-      release_version_tag: ${{ needs.determine-version.outputs.version_tag }}
+      release_version_tag: ${{ needs.determine-version.outputs.hdfview_version_without_prefix }}
       build_environment: release
 
   # Test the released artifacts on all platforms
@@ -189,7 +189,7 @@ jobs:
     needs: [determine-version, call-workflow-release]
     uses: ./.github/workflows/test-release-linux.yml
     with:
-      release_tag: ${{ needs.determine-version.outputs.version_tag }}
+      release_tag: ${{ needs.determine-version.outputs.hdfview_version_without_prefix }}
       hdf4_version: ${{ needs.determine-version.outputs.hdf4_version }}
       hdf5_version: ${{ needs.determine-version.outputs.hdf5_version }}
 
@@ -197,7 +197,7 @@ jobs:
     needs: [determine-version, call-workflow-release]
     uses: ./.github/workflows/test-release-windows.yml
     with:
-      release_tag: ${{ needs.determine-version.outputs.version_tag }}
+      release_tag: ${{ needs.determine-version.outputs.hdfview_version_without_prefix }}
       hdf4_version: ${{ needs.determine-version.outputs.hdf4_version }}
       hdf5_version: ${{ needs.determine-version.outputs.hdf5_version }}
 
@@ -205,7 +205,7 @@ jobs:
     needs: [determine-version, call-workflow-release]
     uses: ./.github/workflows/test-release-macos.yml
     with:
-      release_tag: ${{ needs.determine-version.outputs.version_tag }}
+      release_tag: ${{ needs.determine-version.outputs.hdfview_version_without_prefix }}
       architecture: arm64
       hdf4_version: ${{ needs.determine-version.outputs.hdf4_version }}
       hdf5_version: ${{ needs.determine-version.outputs.hdf5_version }}
@@ -214,7 +214,7 @@ jobs:
     needs: [determine-version, call-workflow-release]
     uses: ./.github/workflows/test-release-macos.yml
     with:
-      release_tag: ${{ needs.determine-version.outputs.version_tag }}
+      release_tag: ${{ needs.determine-version.outputs.hdfview_version_without_prefix }}
       architecture: x86_64
       hdf4_version: ${{ needs.determine-version.outputs.hdf4_version }}
       hdf5_version: ${{ needs.determine-version.outputs.hdf5_version }}

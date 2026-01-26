@@ -8,7 +8,7 @@ on:
         description: 'Git tag name to create'
         type: string
         required: false
-        default: HDFView-99.99.99
+        default: v99.99.99
       build_environment:
         description: 'Environment to locate files'
         type: string

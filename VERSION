@@ -17,5 +17,4 @@ HDFVIEW_VERSION=3.4.1
 HDFVIEW_TAG_PREFIX=HDFView
 
 # Full version tag (constructed as: ${HDFVIEW_TAG_PREFIX}-${HDFVIEW_VERSION})
-# This line is auto-generated for backwards compatibility
 VERSION=HDFView-3.4.1
