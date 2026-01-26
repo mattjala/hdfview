@@ -441,7 +441,7 @@
               </goals>
               <configuration>
                 <files>
-                  <file>VERSION</file>
+                  <file>${session.executionRootDirectory}/VERSION</file>
                 </files>
               </configuration>
               <inherited>true</inherited>
