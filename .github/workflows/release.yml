@@ -173,7 +173,7 @@ jobs:
       artifact_basename: ${{ needs.call-workflow-tarball.outputs.artifact_basename }}
       file_branch: ${{ needs.call-workflow-tarball.outputs.file_branch }}
       file_sha: ${{ needs.call-workflow-tarball.outputs.file_sha }}
-      release_version_tag: ${{ needs.determine-version.outputs.hdfview_version_with_prefix }}
+      release_version_tag: ${{ needs.determine-version.outputs.hdfview_version_without_prefix }}
       build_environment: ${{ needs.determine-version.outputs.build_type }}
 
   # Test the released artifacts on all platforms
