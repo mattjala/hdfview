@@ -287,9 +287,16 @@ jobs:
         mvn install -B -pl object,hdfview -DskipTests -Ddependency-check.skip=true
 
         # Run object tests only (all 149 tests passing)
-        # HDFView UI tests disabled in CI - require real display
-        # UI tests should be run locally before merging
         mvn test -B -pl object -Dmaven.test.failure.ignore=false
+        echo "::endgroup::"
+
+    - name: Run UI Tests
+      run: |
+        echo "::group::Run UI Tests (SWTBot)"
+        # macOS runners have a native window session (Cocoa/Quartz) - no Xvfb needed.
+        # Observability mode: -Dmaven.test.failure.ignore=true reports failures via
+        # surefire XML (picked up by the Test Report step) without failing the job yet.
+        mvn test -B -pl hdfview -Dmaven.test.failure.ignore=true
         echo "::endgroup::"
 
     - name: Package Application
