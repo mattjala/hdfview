@@ -482,11 +482,6 @@
                     <argument>Science</argument>
                     <argument>--linux-shortcut</argument>
                     <argument>--linux-package-deps</argument>
-                    <!-- libwebkit2gtk intentionally NOT listed (see RPM profile below): used only
-                         by SWT's optional Help popups, loaded lazily via dlopen. The soname also
-                         differs by release (libwebkit2gtk-4.1-0 on Ubuntu 22.04+, libwebkit2gtk-4.0-37
-                         on 20.04), so a hard Depends breaks the .deb on older-but-supported Ubuntu.
-                         Do not re-add it. -->
                     <argument>libgtk-3-0,libx11-6,libxext6,libxrandr2,libxrender1,libxtst6,libcairo2,libpango-1.0-0,libatk1.0-0,libasound2,libfreetype6,fontconfig</argument>
                     <argument>--file-associations</argument>
                     <argument>${project.basedir}/../package_files/HDFViewHDF.properties</argument>
@@ -549,12 +544,6 @@
                     <argument>Science</argument>
                     <argument>--linux-shortcut</argument>
                     <argument>--linux-package-deps</argument>
-                    <!-- webkit2gtk intentionally NOT listed: it is used only by SWT's optional
-                         Help popups, loaded lazily via dlopen and wrapped in try/catch, so it is
-                         not required to install, launch, or use HDFView. Its package name/API
-                         version also differs across RPM distros (webkit2gtk3 on RHEL/Rocky/Alma,
-                         webkit2gtk4.1 on Fedora), so a hard Requires makes the RPM uninstallable
-                         on part of the supported audience (e.g. RHEL 9). Do not re-add it. -->
                     <argument>gtk3,libX11,libXext,libXrandr,libXrender,libXtst,cairo,pango,atk,alsa-lib,freetype,fontconfig,libXi,libXinerama,libXcursor,mesa-libGL,mesa-libGLU</argument>
                     <argument>--file-associations</argument>
                     <argument>${project.basedir}/../package_files/HDFViewHDF.properties</argument>
