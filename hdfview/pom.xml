@@ -840,6 +840,23 @@
                     <systemPropertyVariables>
                         <hdfview.workdir>${project.build.testOutputDirectory}/uitest</hdfview.workdir>
                     </systemPropertyVariables>
+                    <!--
+                        One JVM per test class. Each UI test class starts its own HDFView window,
+                        so a class that hangs or crashes the VM (SWT talks to native GTK/Cocoa/Win32
+                        code) would otherwise take every remaining class down with it and leave no
+                        surefire XML behind. Costs one JVM start per class; worth it for isolation.
+                    -->
+                    <reuseForks>false</reuseForks>
+                    <!--
+                        Last-resort backstop. If a fork wedges somewhere the JUnit default timeout
+                        in junit-platform.properties cannot reach - a deadlocked SWT event loop, a
+                        native call that never returns - surefire kills it and the build fails with
+                        a real error instead of burning the CI job's entire time budget silently.
+                        Applies per fork, and reuseForks=false means per test class, so this is a
+                        hard cap on how long any one class can take.
+                    -->
+                    <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+                    <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
                 </configuration>
             </plugin>
 
