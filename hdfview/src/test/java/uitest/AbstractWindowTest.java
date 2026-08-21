@@ -514,18 +514,33 @@ public abstract class AbstractWindowTest {
             fileMenuItem.menu("Close").click();
 
             /*
-             * A Close with no file selected is answered with a beep and an error dialog titled
-             * "<main window title> - Close" (Tools.showError), and the file stays open. Say so.
-             * Without this the only symptom is a row count that never drops, which reports that
-             * something went wrong but nothing about what.
+             * HDFView answers a refused Close with an error dialog from Tools.showError, titled
+             * "<main window title> - Close". Report that as itself: without this the only symptom
+             * is a row count that never drops, which says something went wrong but nothing about
+             * what.
+             *
+             * Report the dialog's own message rather than naming a cause. Two code paths raise a
+             * dialog with this exact title - HDFView.closeFile() when nothing is selected, and
+             * DefaultTreeView's context-menu close when the close itself throws - so asserting
+             * which one happened would be a confident guess. The text distinguishes them.
              */
             for (SWTBotShell openShell : bot.shells()) {
-                if (openShell.isOpen() && openShell.getText().endsWith(" - Close")) {
-                    openShell.close();
-                    fail("closeFile() HDFView declined to close '" + hdfFile.getName() +
-                         "' and raised its \"" + openShell.getText() +
-                         "\" error dialog - the file tree selection was lost before File > Close");
+                if (!openShell.isOpen() || !openShell.getText().endsWith(" - Close"))
+                    continue;
+
+                String dialogTitle = openShell.getText();
+                String dialogText  = "";
+                try {
+                    dialogText = ": \"" + openShell.bot().label(1).getText() + "\"";
                 }
+                catch (Throwable ignored) {
+                    /* the title alone is enough to act on */
+                }
+
+                /* Close first, but never let the close throw away the message. */
+                closeQuietly(openShell);
+                fail("closeFile() HDFView raised \"" + dialogTitle + "\"" + dialogText +
+                     " and left '" + hdfFile.getName() + "' open");
             }
 
             if (deleteFile) {
