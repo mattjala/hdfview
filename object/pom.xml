@@ -185,7 +185,9 @@
                 <configuration>
                     <!-- Object module tests: 9 tests run locally, 0 failures -->
                     <!-- Library paths configured via build.properties (hdf5.lib.dir, hdf.lib.dir) -->
+                    <!-- @{argLine} carries JaCoCo's agent; dropping it disables coverage silently. -->
                     <argLine>
+                        @{argLine}
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.time=ALL-UNNAMED
                         --add-opens java.base/java.time.format=ALL-UNNAMED

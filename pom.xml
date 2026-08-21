@@ -14,7 +14,14 @@
   </modules>
 
   <properties>
-    <!-- argLine not defined here - set by JaCoCo prepare-agent and/or CLI -->
+    <!--
+      Empty default for the argLine that surefire passes to test forks. JaCoCo's
+      prepare-agent overwrites this property with the agent's -javaagent flag; the
+      default exists only so that @{argLine} in the module POMs still resolves when
+      JaCoCo does not run (-Djacoco.skip=true). Module POMs must prepend @{argLine}
+      to their own argLine rather than replacing it, or coverage is silently lost.
+    -->
+    <argLine></argLine>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.release>21</maven.compiler.release>
     <!-- Use classpath instead of module path (module-info.java disabled) -->

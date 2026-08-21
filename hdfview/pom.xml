@@ -828,7 +828,9 @@
                 <configuration>
                     <!-- UI tests: 17 tests fully migrated to JUnit 5 with SWTBot -->
                     <!-- Tests tagged with @Tag("ui") and @Tag("integration") -->
+                    <!-- @{argLine} carries JaCoCo's agent; dropping it disables coverage silently. -->
                     <argLine>
+                        @{argLine}
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.time=ALL-UNNAMED
                         --add-opens java.base/java.time.format=ALL-UNNAMED
