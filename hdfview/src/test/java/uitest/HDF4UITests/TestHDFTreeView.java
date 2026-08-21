@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.eclipse.swtbot.nebula.nattable.finder.widgets.SWTBotNatTable;
@@ -15,6 +16,8 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import uitest.AbstractWindowTest;
 import uitest.AbstractWindowTest.DataRetrieverFactory.TableDataRetriever;
 
+@Tag("ui")
+@Tag("integration")
 public class TestHDFTreeView extends AbstractWindowTest {
 
     @Test

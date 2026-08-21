@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -13,6 +14,8 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 
 import uitest.AbstractWindowTest;
 
+@Tag("ui")
+@Tag("integration")
 public class TestNCTreeView extends AbstractWindowTest {
 
     @Test
