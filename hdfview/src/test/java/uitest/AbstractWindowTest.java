@@ -345,11 +345,17 @@ public abstract class AbstractWindowTest {
              */
             open_files++;
         }
+        /*
+         * Report rather than swallow. Both of these used to printStackTrace() and return the
+         * File as if nothing had happened, so a failure here surfaced much later as an
+         * unrelated-looking row-count or widget-not-found error in the caller. closeFile() and
+         * testSamplePixel() below already fail() for the same reason.
+         */
         catch (Exception ex) {
-            ex.printStackTrace();
+            fail("openFile() failed to open '" + name + "'", ex);
         }
         catch (AssertionError ae) {
-            ae.printStackTrace();
+            fail("openFile() failed to open '" + name + "'", ae);
         }
         finally {
             if (fileNameShell != null && fileNameShell.isOpen())
@@ -397,11 +403,17 @@ public abstract class AbstractWindowTest {
             assertTrue(hdfFile.exists(), "createFile() File '" + hdfFile + "' not created");
             open_files++;
         }
+        /*
+         * Report rather than swallow. Both of these used to printStackTrace() and return the
+         * File as if nothing had happened, so a failure here surfaced much later as an
+         * unrelated-looking row-count or widget-not-found error in the caller. closeFile() and
+         * testSamplePixel() below already fail() for the same reason.
+         */
         catch (Exception ex) {
-            ex.printStackTrace();
+            fail("createFile() failed to create '" + name + "'", ex);
         }
         catch (AssertionError ae) {
-            ae.printStackTrace();
+            fail("createFile() failed to create '" + name + "'", ae);
         }
         log.trace("createFile  {}, open_files={}", name, open_files);
 
