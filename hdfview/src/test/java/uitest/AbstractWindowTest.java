@@ -463,9 +463,24 @@ public abstract class AbstractWindowTest {
             log.trace("closeFile after open_files={}", open_files);
 
             if (open_files > 0) {
-                assertTrue(filetree.rowCount() == open_files - 1,
+                /*
+                 * Wait for the close to land before judging it. The tree is rebuilt on the UI
+                 * thread after File > Close returns, so reading rowCount() on the next statement
+                 * races that rebuild - a race a loaded CI runner loses more often than a dev box.
+                 * The waitUntil for this condition used to sit below the assertion, where it
+                 * could never help. On timeout, fall through so the assertion reports the count.
+                 */
+                int expectedRows = open_files - 1;
+                try {
+                    bot.waitUntil(Conditions.treeHasRows(filetree, expectedRows));
+                }
+                catch (org.eclipse.swtbot.swt.finder.widgets.TimeoutException te) {
+                    /* deliberately ignored - the assertion below gives the better message */
+                }
+
+                assertTrue(filetree.rowCount() == expectedRows,
                            constructWrongValueMessage("closeFile()", "filetree wrong row count",
-                                                      String.valueOf(open_files - 1),
+                                                      String.valueOf(expectedRows),
                                                       String.valueOf(filetree.rowCount())));
                 open_files--;
             }
