@@ -367,11 +367,20 @@ jobs:
         echo "Xvfb is up on :99"
 
         # Without a window manager no shell ever becomes active, and the suite waits on shell
-        # activation in closeFile() and openDataObject(). Not fatal if it fails to start - the
-        # tests still run - so this does not gate the step.
+        # activation in closeFile() and openDataObject(). Wait for it to actually own the
+        # display rather than sleeping and hoping: metacity claims _NET_SUPPORTING_WM_CHECK on
+        # the root window once it is managing. Not fatal if it never arrives - the tests still
+        # run, they just lose the activation waits - so this does not gate the step.
         metacity --sm-disable --display=:99 &
-        sleep 3
-        echo "metacity started"
+        for i in $(seq 1 20); do
+          xprop -display :99 -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q "window id" && break
+          sleep 1
+        done
+        if xprop -display :99 -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q "window id"; then
+          echo "metacity is managing :99"
+        else
+          echo "WARNING: no window manager on :99 - shell activation waits will time out"
+        fi
 
         mvn test -B -pl hdfview
         echo "::endgroup::"
