@@ -151,9 +151,13 @@ public abstract class AbstractWindowTest {
 
     /**
      * Rendezvous with the UI thread, bounded in time. Reports a test failure rather than
-     * blocking indefinitely when the main window never opens. Once the barrier is tripped or
-     * broken it stays broken, so every subsequent test fails fast with the same cause instead
-     * of each one paying the timeout again.
+     * blocking indefinitely when the main window never opens.
+     *
+     * On the failure path the cost is paid roughly twice, not once per test: the ui thread's
+     * reset() returns the barrier to a usable state rather than leaving it broken, so the first
+     * test fails fast on BrokenBarrierException but the second still waits out the full
+     * timeout. Only once *that* timeout breaks the barrier do the remaining tests fail
+     * immediately.
      */
     private static void awaitAppWindow() throws InterruptedException
     {
@@ -257,6 +261,17 @@ public abstract class AbstractWindowTest {
                             window.runMainWindow();
                         }
                     }
+                    catch (BrokenBarrierException bbe) {
+                        // Not our failure. A test thread gave up waiting and broke the barrier
+                        // on its way out - the window opened fine, it just took longer than
+                        // APP_STARTUP_TIMEOUT_SECONDS to get here. Recording this as the startup
+                        // failure would overwrite the real cause with a self-inflicted one and
+                        // report "UI thread died before the main window opened" about a thread
+                        // that did no such thing. Falling through to the dispose below would be
+                        // worse still: it would tear down the Display over one slow window and
+                        // take every remaining test in the class with it.
+                        log.warn("test thread abandoned the startup rendezvous", bbe);
+                    }
                     catch (Throwable t) {
                         // Record the real cause and break the barrier so that any test parked
                         // in awaitAppWindow() fails immediately with this stack trace, rather
@@ -266,17 +281,18 @@ public abstract class AbstractWindowTest {
                         appStartupFailure = t;
                         t.printStackTrace();
                         swtBarrier.reset();
+
+                        if (shell != null) {
+                            Display.getDefault().syncExec(new Runnable() {
+                                @Override
+                                public void run()
+                                {
+                                    shell.getDisplay().dispose();
+                                }
+                            });
+                        }
                     }
 
-                    if (shell != null) {
-                        Display.getDefault().syncExec(new Runnable() {
-                            @Override
-                            public void run()
-                            {
-                                shell.getDisplay().dispose();
-                            }
-                        });
-                    }
                 }
             });
             uiThread.setDaemon(true);
