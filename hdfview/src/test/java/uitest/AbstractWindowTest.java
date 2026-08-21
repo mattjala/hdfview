@@ -296,6 +296,26 @@ public abstract class AbstractWindowTest {
         }
     }
 
+    /**
+     * Close a dialog we are done with, swallowing anything it throws on the way out.
+     *
+     * Cleanup runs on the failure path, and an exception thrown from a finally block replaces
+     * the one already propagating - so an unguarded close() here would discard the very
+     * failure the caller just took care to report, substituting a bare "Timed out waiting for
+     * Shell ... to close". SWTBotShell.close() ends in a waitUntil, so it can absolutely throw:
+     * a modal error dialog raised over this one keeps it open until the SWTBot timeout.
+     */
+    private static void closeQuietly(SWTBotShell theShell)
+    {
+        try {
+            if (theShell != null && theShell.isOpen())
+                theShell.close();
+        }
+        catch (Throwable ignored) {
+            /* the failure being reported by the caller matters more than this one */
+        }
+    }
+
     protected File openFile(String name, FILE_MODE openMode)
     {
         SWTBotShell fileNameShell = null;
@@ -358,8 +378,7 @@ public abstract class AbstractWindowTest {
             fail("openFile() failed to open '" + name + "'", ae);
         }
         finally {
-            if (fileNameShell != null && fileNameShell.isOpen())
-                fileNameShell.close();
+            closeQuietly(fileNameShell);
         }
         log.trace("openFile  {}, open_files={}", name, open_files);
 
@@ -376,6 +395,8 @@ public abstract class AbstractWindowTest {
         if (hdfFile.exists())
             hdfFile.delete();
 
+        SWTBotShell fileNameShell = null;
+
         try {
             SWTBotMenu fileMenuItem    = bot.menu().menu("File");
             SWTBotMenu fileNewMenuItem = fileMenuItem.menu("New");
@@ -386,19 +407,19 @@ public abstract class AbstractWindowTest {
             else
                 throw new IllegalArgumentException("unknown file type");
 
-            SWTBotShell shell = bot.shell("Enter a file name");
-            shell.activate();
-            bot.waitUntil(Conditions.shellIsActive(shell.getText()));
+            fileNameShell = bot.shell("Enter a file name");
+            fileNameShell.activate();
+            bot.waitUntil(Conditions.shellIsActive(fileNameShell.getText()));
 
-            SWTBotText text = shell.bot().text();
+            SWTBotText text = fileNameShell.bot().text();
             text.setText(name);
 
             String val = text.getText();
             assertTrue(val.equals(name),
                        "createFile() wrong file name: expected '" + name + "' but was '" + val + "'");
 
-            shell.bot().button("   &OK   ").click();
-            bot.waitUntil(Conditions.shellCloses(shell));
+            fileNameShell.bot().button("   &OK   ").click();
+            bot.waitUntil(Conditions.shellCloses(fileNameShell));
 
             assertTrue(hdfFile.exists(), "createFile() File '" + hdfFile + "' not created");
             open_files++;
@@ -414,6 +435,16 @@ public abstract class AbstractWindowTest {
         }
         catch (AssertionError ae) {
             fail("createFile() failed to create '" + name + "'", ae);
+        }
+        finally {
+            /*
+             * createFile() had no cleanup at all. That was survivable while it swallowed
+             * failures and returned; now that it throws, an abort here would leave the modal
+             * "Enter a file name" shell up across @AfterEach, where closeShell() syncExecs a
+             * close on the main window underneath it - and the ui thread may never loop round
+             * to build the next window, taking the rest of the class with it.
+             */
+            closeQuietly(fileNameShell);
         }
         log.trace("createFile  {}, open_files={}", name, open_files);
 
