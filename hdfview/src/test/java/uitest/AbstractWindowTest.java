@@ -448,11 +448,38 @@ public abstract class AbstractWindowTest {
             SWTBotTree filetree   = mainShell.bot().tree();
             log.trace("closeFile {}, open_files={}", hdfFile.getName(), open_files);
 
+            /*
+             * Collapse the file's node before clicking it. HDFView takes the file to close from
+             * DefaultTreeView.selectedFile, which is maintained by the tree's mouseUp handler -
+             * and that handler sets selectedFile to null outright when the click does not land
+             * on a TreeItem. After a test has expanded much of the tree the file's own row can
+             * be scrolled out of reach, so the synthesized click lands on empty space and
+             * silently clears the selection. Collapsing puts the file back on the first row.
+             */
+            SWTBotTreeItem fileItem = filetree.getTreeItem(hdfFile.getName());
+            if (fileItem.isExpanded())
+                fileItem.collapse();
+
             filetree.select(hdfFile.getName());
-            filetree.getTreeItem(hdfFile.getName()).click();
+            fileItem.click();
 
             SWTBotMenu fileMenuItem = bot.menu().menu("File");
             fileMenuItem.menu("Close").click();
+
+            /*
+             * A Close with no file selected is answered with a beep and an error dialog titled
+             * "<main window title> - Close" (Tools.showError), and the file stays open. Say so.
+             * Without this the only symptom is a row count that never drops, which reports that
+             * something went wrong but nothing about what.
+             */
+            for (SWTBotShell openShell : bot.shells()) {
+                if (openShell.isOpen() && openShell.getText().endsWith(" - Close")) {
+                    openShell.close();
+                    fail("closeFile() HDFView declined to close '" + hdfFile.getName() +
+                         "' and raised its \"" + openShell.getText() +
+                         "\" error dialog - the file tree selection was lost before File > Close");
+                }
+            }
 
             if (deleteFile) {
                 if (hdfFile.exists()) {
