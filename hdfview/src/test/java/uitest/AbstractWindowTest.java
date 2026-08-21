@@ -475,21 +475,37 @@ public abstract class AbstractWindowTest {
     protected void closeFile(File hdfFile, boolean deleteFile)
     {
         try {
-            SWTBotShell mainShell = activateMainShell();
-            SWTBotTree filetree   = mainShell.bot().tree();
+            SWTBotShell mainShell     = activateMainShell();
+            final SWTBotTree filetree = mainShell.bot().tree();
             log.trace("closeFile {}, open_files={}", hdfFile.getName(), open_files);
 
             /*
-             * Collapse the file's node before clicking it. HDFView takes the file to close from
-             * DefaultTreeView.selectedFile, which is maintained by the tree's mouseUp handler -
-             * and that handler sets selectedFile to null outright when the click does not land
-             * on a TreeItem. After a test has expanded much of the tree the file's own row can
-             * be scrolled out of reach, so the synthesized click lands on empty space and
-             * silently clears the selection. Collapsing puts the file back on the first row.
+             * Scroll the file's row into view before clicking it.
+             *
+             * HDFView takes the file to close from DefaultTreeView.selectedFile, maintained by
+             * the tree's mouseUp handler - and that handler sets selectedFile to null outright
+             * when a click does not land on a TreeItem. SWTBotTreeItem.click() takes its
+             * coordinates from TreeItem.getBounds(), which is relative to the tree's client
+             * area and is not clamped to it, so a row that has been scrolled out of view yields
+             * a click on empty space and silently clears the selection.
+             *
+             * SWTBotTree.select() does not scroll - it reaches SWT's Tree.setSelection(TreeItem[]),
+             * which calls the internal showItem with scroll=false. The public
+             * Tree.showItem(TreeItem) passes scroll=true, which is what actually reveals the row.
+             *
+             * Keep the select() below as well. It looks redundant next to click(), and it is not:
+             * select() dispatches its selection events straight to the widget's listeners, while
+             * click() posts real events at pixel coordinates. Removing it was measured to bring
+             * back the "Select a file to close" failure this whole path exists to prevent.
              */
-            SWTBotTreeItem fileItem = filetree.getTreeItem(hdfFile.getName());
-            if (fileItem.isExpanded())
-                fileItem.collapse();
+            final SWTBotTreeItem fileItem = filetree.getTreeItem(hdfFile.getName());
+            Display.getDefault().syncExec(new Runnable() {
+                @Override
+                public void run()
+                {
+                    filetree.widget.showItem(fileItem.widget);
+                }
+            });
 
             filetree.select(hdfFile.getName());
             fileItem.click();
