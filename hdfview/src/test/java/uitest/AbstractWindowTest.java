@@ -346,7 +346,12 @@ public abstract class AbstractWindowTest {
             fileNameShell.bot().button("   &OK   ").click();
             bot.waitUntil(Conditions.shellCloses(fileNameShell));
 
-            SWTBotTree filetree = bot.tree();
+            /*
+             * Same reason as closeFile(): this lookup lands immediately after a shell closed,
+             * which is precisely when Display.getActiveShell() can be null and an unscoped
+             * bot.tree() fails with "Could not find widget matching: (of type 'Tree')".
+             */
+            SWTBotTree filetree = activateMainShell().bot().tree();
             bot.waitUntil(Conditions.treeHasRows(filetree, open_files + 1));
 
             /*
@@ -960,7 +965,10 @@ public abstract class AbstractWindowTest {
      * Only useful when testing certain Menu items which open files in a different
      * manner than the openFile() method.
      */
-    protected final void refreshOpenFileCount() { open_files = bot.tree().getAllItems().length; }
+    protected final void refreshOpenFileCount()
+    {
+        open_files = activateMainShell().bot().tree().getAllItems().length;
+    }
 
     /*
      * Only useful when testing certain Menu items which close files in a different
