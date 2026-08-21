@@ -420,17 +420,36 @@ public abstract class AbstractWindowTest {
         return hdfFile;
     }
 
+    /**
+     * Bring the main window forward and wait until SWT agrees it is the active shell.
+     *
+     * SWTBot resolves widgets against whatever Display.getActiveShell() returns, and closing a
+     * data window leaves that null for a short while - observed directly with a shell dump:
+     * exactly one shell present, visible and undisposed, yet getActiveShell() returned null. A
+     * lookup landing in that gap fails with "Could not find widget matching: (of type 'Tree')"
+     * or "The widget was null" even though the widget is sitting right there. Every one of the
+     * 42 Tree failures in the first Linux CI run came through closeFile() this way.
+     *
+     * Waiting on the main shell by identity is what makes this deterministic; bot.shells()[0]
+     * is whatever order Display.getShells() happens to return, which is not a guarantee.
+     */
+    protected static SWTBotShell activateMainShell()
+    {
+        SWTBotShell mainShell = new SWTBotShell(shell);
+        mainShell.activate();
+        bot.waitUntil(Conditions.shellIsActive(mainShell.getText()));
+        return mainShell;
+    }
+
     protected void closeFile(File hdfFile, boolean deleteFile)
     {
         try {
-            SWTBotTree filetree = bot.tree();
+            SWTBotShell mainShell = activateMainShell();
+            SWTBotTree filetree   = mainShell.bot().tree();
             log.trace("closeFile {}, open_files={}", hdfFile.getName(), open_files);
 
             filetree.select(hdfFile.getName());
             filetree.getTreeItem(hdfFile.getName()).click();
-
-            bot.shells()[0].activate();
-            bot.waitUntil(Conditions.shellIsActive(bot.shells()[0].getText()));
 
             SWTBotMenu fileMenuItem = bot.menu().menu("File");
             fileMenuItem.menu("Close").click();
