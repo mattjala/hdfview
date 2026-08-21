@@ -473,10 +473,10 @@ public class TestHDFViewIntConversions extends AbstractWindowTest {
      * of a large dataset through SWTBot, each cell costing a widget lookup plus the playback
      * delay, so it is simply long - measured at 186s on a dev box, and CI runners are slower.
      * Annotated rather than raising the global default, which would blind the other tests to
-     * a genuine hang for 15 minutes apiece.
+     * a genuine hang for 12 minutes apiece.
      */
     @Test
-    @Timeout(value = 15, unit = TimeUnit.MINUTES)
+    @Timeout(value = 12, unit = TimeUnit.MINUTES)
     public void checkHDF5GroupDS32()
     {
         String[][] expectedData = {
@@ -787,10 +787,10 @@ public class TestHDFViewIntConversions extends AbstractWindowTest {
      * of a large dataset through SWTBot, each cell costing a widget lookup plus the playback
      * delay, so it is simply long - measured at ~186s on a dev box, and CI runners are slower.
      * Annotated rather than raising the global default, which would blind the other tests to
-     * a genuine hang for 15 minutes apiece.
+     * a genuine hang for 12 minutes apiece.
      */
     @Test
-    @Timeout(value = 15, unit = TimeUnit.MINUTES)
+    @Timeout(value = 12, unit = TimeUnit.MINUTES)
     public void checkHDF5GroupDU32()
     {
         String[][] expectedData = {
@@ -1098,10 +1098,10 @@ public class TestHDFViewIntConversions extends AbstractWindowTest {
      * of a large dataset through SWTBot, each cell costing a widget lookup plus the playback
      * delay, so it is simply long - measured at 372s on a dev box, and CI runners are slower.
      * Annotated rather than raising the global default, which would blind the other tests to
-     * a genuine hang for 15 minutes apiece.
+     * a genuine hang for 12 minutes apiece.
      */
     @Test
-    @Timeout(value = 15, unit = TimeUnit.MINUTES)
+    @Timeout(value = 12, unit = TimeUnit.MINUTES)
     public void checkHDF5GroupDS64()
     {
         String[][] expectedData    = {{"-1",
@@ -2417,10 +2417,10 @@ public class TestHDFViewIntConversions extends AbstractWindowTest {
      * of a large dataset through SWTBot, each cell costing a widget lookup plus the playback
      * delay, so it is simply long - measured at ~372s on a dev box, and CI runners are slower.
      * Annotated rather than raising the global default, which would blind the other tests to
-     * a genuine hang for 15 minutes apiece.
+     * a genuine hang for 12 minutes apiece.
      */
     @Test
-    @Timeout(value = 15, unit = TimeUnit.MINUTES)
+    @Timeout(value = 12, unit = TimeUnit.MINUTES)
     public void checkHDF5GroupDU64()
     {
         String[][] expectedData = {

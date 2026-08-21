@@ -45,7 +45,7 @@ jobs:
   build-and-test:
     name: Build and Test (Linux)
     runs-on: ubuntu-latest
-    timeout-minutes: 110
+    timeout-minutes: 130
 
     strategy:
       fail-fast: false
@@ -344,6 +344,12 @@ jobs:
       #
       # timeout-minutes bounds the step below the job budget, so an overrun still leaves
       # time for the reporting steps below to publish whatever surefire XML was written.
+      #
+      # continue-on-error keeps a failing step off the job's result but does not give back
+      # the time it spent. The ladder has to fit end to end: the surefire fork timeout (60m)
+      # sits under this step cap, and this cap plus the ~7 minutes the surrounding steps take
+      # sits under the job's 130. A step that actually ran for its full 90 would otherwise
+      # take the job over its own cap and turn an advisory failure into a red job.
       continue-on-error: true
       timeout-minutes: 90
       run: |

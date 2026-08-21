@@ -857,15 +857,21 @@
                         Applies per fork, and reuseForks=false means per test class, so this is a
                         hard cap on how long any one class can take.
 
-                        Sized against the slowest class rather than the slowest test.
-                        TestHDFViewIntConversions runs four wide-integer tests measured at
-                        186-372s each on a dev box; with CI runners slower than that, the class
-                        lands near half an hour and the previous 600s cap would have killed the
-                        fork outright. 45 minutes leaves room without letting a native wedge -
-                        the only thing this backstop still exists for, since the JUnit timeouts
-                        cover everything they can reach - run away with the job.
+                        Sized to sit ABOVE the sum of a class's per-test JUnit timeouts, so
+                        that JUnit always reports first and this only ever catches what JUnit
+                        cannot reach - a native wedge with no interruptible Java frame.
+
+                        The binding class is TestHDFViewIntConversions: 8 tests, 4 annotated at
+                        12 minutes and 4 on the 2 minute default, so the JUnit timeouts permit
+                        at most 4*12 + 4*2 = 56 minutes. 60 minutes clears that with room for
+                        JVM start. Measured runtime for that class on a CI runner is 1334s, so
+                        this is roughly 2.7x the real figure, not a number anyone should hit.
+
+                        Get this ordering wrong and the backstop becomes the bug: a fork killed
+                        here writes no surefire XML at all, which is the exact failure mode the
+                        bounded-hang work exists to prevent.
                     -->
-                    <forkedProcessTimeoutInSeconds>2700</forkedProcessTimeoutInSeconds>
+                    <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
                 </configuration>
             </plugin>
