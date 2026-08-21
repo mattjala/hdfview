@@ -1,11 +1,11 @@
 package uitest.NC3UITests;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTabItem;
@@ -35,8 +35,8 @@ public class TestNCTreeView extends AbstractWindowTest {
             tabItem.activate();
 
             String val = bot.textWithLabel("Name: ").getText();
-            assertTrue(constructWrongValueMessage("testRoy_attributes()", "wrong name", groupname, val),
-                       val.equals(groupname)); // Test group name
+            assertTrue(val.equals(groupname), constructWrongValueMessage("testRoy_attributes()", "wrong name",
+                                                                         groupname, val)); // Test group name
         }
         catch (Exception ex) {
             ex.printStackTrace();
@@ -75,8 +75,9 @@ public class TestNCTreeView extends AbstractWindowTest {
             tabItem.activate();
 
             String val = bot.textWithLabel("Name: ").getText();
-            assertTrue(constructWrongValueMessage("testRoy()", "wrong name", datasetName, val),
-                       val.equals(datasetName)); // Test dataset name
+            assertTrue(
+                val.equals(datasetName),
+                constructWrongValueMessage("testRoy()", "wrong name", datasetName, val)); // Test dataset name
         }
         catch (Exception ex) {
             ex.printStackTrace();

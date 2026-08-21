@@ -1,11 +1,11 @@
 package uitest.HDF4UITests;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.eclipse.swtbot.nebula.nattable.finder.widgets.SWTBotNatTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -40,8 +40,8 @@ public class TestHDFTreeView extends AbstractWindowTest {
             tabItem.activate();
 
             String val = bot.textWithLabel("Name: ").getText();
-            assertTrue(constructWrongValueMessage("testVSLongname()", "wrong name", groupname, val),
-                       val.equals(groupname)); // Test group name
+            assertTrue(val.equals(groupname), constructWrongValueMessage("testVSLongname()", "wrong name",
+                                                                         groupname, val)); // Test group name
 
             // Open dataset
             tableShell = openTreeviewObject(filetree, filename, groupname + "/" + datasetName);
@@ -90,16 +90,17 @@ public class TestHDFTreeView extends AbstractWindowTest {
             tabItem.activate();
 
             String val = bot.textWithLabel("Name: ").getText();
-            assertTrue(constructWrongValueMessage("testVSLongname()", "wrong name", datasetName, val),
-                       val.equals(datasetName)); // Test dataset name
+            assertTrue(val.equals(datasetName),
+                       constructWrongValueMessage("testVSLongname()", "wrong name", datasetName,
+                                                  val)); // Test dataset name
 
             val = bot.textInGroup("Dataset Dataspace and Datatype", 0).getText();
-            assertTrue(constructWrongValueMessage("testVSLongname()", "wrong rank", "1", val),
-                       val.equals("1")); // Test rank
+            assertTrue(val.equals("1"),
+                       constructWrongValueMessage("testVSLongname()", "wrong rank", "1", val)); // Test rank
 
             val = bot.textInGroup("Dataset Dataspace and Datatype", 3).getText();
-            assertTrue(constructWrongValueMessage("testVSLongname()", "wrong data type", "Vdata", val),
-                       val.equals("Vdata")); // Test data type
+            assertTrue(val.equals("Vdata"), constructWrongValueMessage("testVSLongname()", "wrong data type",
+                                                                       "Vdata", val)); // Test data type
         }
         catch (Exception ex) {
             ex.printStackTrace();
