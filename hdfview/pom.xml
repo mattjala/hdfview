@@ -856,8 +856,16 @@
                         a real error instead of burning the CI job's entire time budget silently.
                         Applies per fork, and reuseForks=false means per test class, so this is a
                         hard cap on how long any one class can take.
+
+                        Sized against the slowest class rather than the slowest test.
+                        TestHDFViewIntConversions runs four wide-integer tests measured at
+                        186-372s each on a dev box; with CI runners slower than that, the class
+                        lands near half an hour and the previous 600s cap would have killed the
+                        fork outright. 45 minutes leaves room without letting a native wedge -
+                        the only thing this backstop still exists for, since the JUnit timeouts
+                        cover everything they can reach - run away with the job.
                     -->
-                    <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+                    <forkedProcessTimeoutInSeconds>2700</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
                 </configuration>
             </plugin>
