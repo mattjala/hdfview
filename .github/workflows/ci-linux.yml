@@ -252,7 +252,12 @@ jobs:
         hdf.lib.dir=${{ env.HDF4LIB_PATH }}/lib
 
         # Platform Configuration
-        platform.hdf.lib=${{ env.HDF5LIB_PATH }}/lib
+        # Both library directories. This value becomes -Djava.library.path for the test
+        # forks, which replaces the JVM's default outright - so a directory missing here is
+        # unreachable no matter what LD_LIBRARY_PATH says. Omitting the HDF4 directory made
+        # every HDF4 operation in the UI suite fail with
+        # "UnsatisfiedLinkError: hdf.hdflib.HDFLibrary.HDdont_atexit()".
+        platform.hdf.lib=${{ env.HDF5LIB_PATH }}/lib:${{ env.HDF4LIB_PATH }}/lib
 
         # CI-specific settings
         ci.build=true
