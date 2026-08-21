@@ -196,19 +196,6 @@ public abstract class AbstractWindowTest {
         });
     }
 
-    public void checkOpenFiles()
-    {
-        if (open_files > 0) {
-            String failMsg =
-                "Test " + testInfo.getDisplayName() + " still had " + open_files + " files open!";
-
-            open_files = 0;
-
-            fail(failMsg);
-        }
-
-        open_files = 0;
-    }
 
     @BeforeAll
     public static void setupApp()
