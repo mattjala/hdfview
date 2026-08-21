@@ -466,14 +466,16 @@ public abstract class AbstractWindowTest {
      * or "The widget was null" even though the widget is sitting right there. Every one of the
      * 42 Tree failures in the first Linux CI run came through closeFile() this way.
      *
-     * Waiting on the main shell by identity is what makes this deterministic; bot.shells()[0]
-     * is whatever order Display.getShells() happens to return, which is not a guarantee.
+     * Naming the main shell by identity is what makes this deterministic; bot.shells()[0] is
+     * whatever order Display.getShells() happens to return, which is not a guarantee.
+     *
+     * activate() already blocks until the shell reports itself active - it ends in a waitUntil
+     * on that condition - so no further wait is needed here.
      */
     protected static SWTBotShell activateMainShell()
     {
         SWTBotShell mainShell = new SWTBotShell(shell);
         mainShell.activate();
-        bot.waitUntil(Conditions.shellIsActive(mainShell.getText()));
         return mainShell;
     }
 
@@ -515,7 +517,7 @@ public abstract class AbstractWindowTest {
             filetree.select(hdfFile.getName());
             fileItem.click();
 
-            SWTBotMenu fileMenuItem = bot.menu().menu("File");
+            SWTBotMenu fileMenuItem = mainShell.bot().menu().menu("File");
             fileMenuItem.menu("Close").click();
 
             /*
@@ -579,16 +581,14 @@ public abstract class AbstractWindowTest {
                 open_files--;
             }
 
-            bot.waitUntil(Conditions.treeHasRows(filetree, open_files));
             log.trace("closeFile after open_files={}", open_files);
         }
         catch (Exception ex) {
-            ex.printStackTrace();
-            fail(ex.getMessage());
+            fail("closeFile() failed to close '" + hdfFile.getName() + "'", ex);
         }
         catch (AssertionError ae) {
-            ae.printStackTrace();
-            fail(ae.getMessage());
+            /* Already a reported failure with its own message; rethrow rather than reword. */
+            throw ae;
         }
     }
 
