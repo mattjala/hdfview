@@ -103,9 +103,12 @@ public abstract class AbstractWindowTest {
     private static volatile Throwable appStartupFailure = null;
 
     /*
-     * How long any single bot.waitUntil() will block before giving up. Set explicitly rather
-     * than inheriting the SWTBot default so that a widget which never appears costs a bounded,
-     * known amount of time instead of whatever the library happens to default to.
+     * How long any single bot.waitUntil() will block before giving up.
+     *
+     * This is a deliberate raise, not a clarification: SWTBotPreferences already defaults to
+     * 5000ms. Doubling it buys tolerance on a loaded CI runner, and costs an extra 5s on every
+     * lookup that is going to fail anyway - a trade worth revisiting if the suite's failing
+     * tests ever outnumber its passing ones again.
      */
     private static final long SWTBOT_TIMEOUT_MS = 10000L;
 
@@ -138,7 +141,6 @@ public abstract class AbstractWindowTest {
          */
         open_files = 0;
 
-        SWTBotPreferences.TIMEOUT        = SWTBOT_TIMEOUT_MS;
         SWTBotPreferences.PLAYBACK_DELAY = TEST_DELAY;
         Display.getDefault().syncExec(new Runnable() {
             @Override
@@ -295,6 +297,8 @@ public abstract class AbstractWindowTest {
 
                 }
             });
+            SWTBotPreferences.TIMEOUT = SWTBOT_TIMEOUT_MS;
+
             uiThread.setDaemon(true);
             uiThread.start();
         }
