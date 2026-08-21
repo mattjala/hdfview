@@ -29,6 +29,8 @@ This guide explains how to run tests for HDFView locally and in CI environments.
 
 5. **Display Server** - X11 on Linux, native on macOS/Windows
 6. **Xvfb** - Virtual framebuffer for headless testing (Linux only)
+7. **A window manager** - required alongside Xvfb; without one no shell becomes active and
+   SWTBot's widget lookups fail. `metacity` is enough.
 
 ### Configuration
 
@@ -64,7 +66,9 @@ mvn test
 
 The object module tests HDF5 object model and file operations, and does not require a display.
 
-The UI module (hdfview) tests SWT widgets, menus, dialogs, etc. It requires a real display, NOT Xvfb - this is a SWT limitation. Due to the need to display windows, this module is disabled in CI and must be run locally. Currently, 5 tests are failing - see GitHub issues #383-386.
+The UI module (hdfview) tests SWT widgets, menus, dialogs, etc. It needs a display, and Xvfb is sufficient - it runs that way on Linux CI. A window manager must be running on that display as well: SWTBot resolves widgets against the active shell, and on a bare X server nothing ever becomes active. `ci-linux.yml` starts Xvfb and metacity and runs the suite as an advisory (non-blocking) step.
+
+As of the Linux CI enablement work, 97 of 106 UI tests pass. The remaining failures are tracked separately: five are tests whose data files live in per-class subdirectories that the harness's flat working directory never reaches, and the rest are compound-datatype bugs.
 
 ```bash
 # Object module only (no display needed)
@@ -191,8 +195,10 @@ mvn test
 # 2. Run object tests only (fast)
 mvn test -pl object
 
-# 3. Run UI tests with Xvfb
-xvfb-run -a mvn test -pl hdfview
+# 3. Run UI tests with Xvfb (start a window manager on the same display first)
+Xvfb :99 -screen 0 1280x1024x24 &
+DISPLAY=:99 metacity --sm-disable &
+DISPLAY=:99 mvn test -pl hdfview
 
 # 4. Run specific test
 mvn test -Dtest=TestHDFViewMenu
