@@ -129,6 +129,15 @@ public abstract class AbstractWindowTest {
         awaitAppWindow();
         bot = new SWTBot();
 
+        /*
+         * Each rendezvous with the ui thread hands back a brand new HDFView and shell - its
+         * while(true) loop builds one per trip through the barrier - so no file is open yet.
+         * open_files is static and was never reset, so one failed test left the count high and
+         * every later test in the class then waited for a file tree row that could not arrive,
+         * turning a single failure into a whole class of misleading ones.
+         */
+        open_files = 0;
+
         SWTBotPreferences.TIMEOUT        = SWTBOT_TIMEOUT_MS;
         SWTBotPreferences.PLAYBACK_DELAY = TEST_DELAY;
         Display.getDefault().syncExec(new Runnable() {
