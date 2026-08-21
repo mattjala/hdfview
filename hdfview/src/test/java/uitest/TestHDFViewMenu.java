@@ -1071,7 +1071,7 @@ public class TestHDFViewMenu extends AbstractWindowTest {
     {
         try {
             SWTBotMenu fileMenuItem = bot.menu().menu("Tools");
-            fileMenuItem.menu("User Options").click();
+            fileMenuItem.menu("Preferences...").click();
 
             SWTBotShell botshell = bot.shell("Preferences");
             botshell.activate();

@@ -878,7 +878,7 @@ public class TestTreeViewExport extends AbstractWindowTest {
         try {
             // switch to ViewProperties.DELIMITER_TAB
             SWTBotMenu fileMenuItem = bot.menu().menu("Tools");
-            fileMenuItem.menu("User Options").click();
+            fileMenuItem.menu("Preferences...").click();
 
             SWTBotShell botshell = bot.shell("Preferences");
             botshell.activate();
@@ -1440,7 +1440,7 @@ public class TestTreeViewExport extends AbstractWindowTest {
         try {
             // switch to ViewProperties.DELIMITER_COMMA
             SWTBotMenu fileMenuItem = bot.menu().menu("Tools");
-            fileMenuItem.menu("User Options").click();
+            fileMenuItem.menu("Preferences...").click();
 
             SWTBotShell botshell = bot.shell("Preferences");
             botshell.activate();
