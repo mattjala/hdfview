@@ -276,7 +276,7 @@ jobs:
         hdf.lib.dir=${{ env.HDF4LIB_PATH }}/lib
 
         # Platform Configuration
-        platform.hdf.lib=${{ env.HDF5LIB_PATH }}/lib
+        platform.hdf.lib=${{ env.HDF5LIB_PATH }}/lib:${{ env.HDF4LIB_PATH }}/lib
 
         # CI-specific settings
         ci.build=true

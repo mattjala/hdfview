@@ -158,7 +158,7 @@ jobs:
             hdf5.lib.dir=${{ env.HDF5LIB_PATH }}/lib
             hdf5.plugin.dir=${{ env.HDF5LIB_PATH }}/lib/plugin
             hdf.lib.dir=${{ env.HDF4LIB_PATH }}/lib
-            platform.hdf.lib=${{ env.HDF5LIB_PATH }}/lib
+            platform.hdf.lib=${{ env.HDF5LIB_PATH }}/lib:${{ env.HDF4LIB_PATH }}/lib
             EOF
 
             echo "Generated build.properties:"
