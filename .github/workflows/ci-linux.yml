@@ -383,7 +383,7 @@ jobs:
         # Surface the counts in the job log even when the step above was cut short, so a
         # run is never just a red X with no numbers attached.
         python3 - <<'EOF' >> $GITHUB_STEP_SUMMARY
-        import glob, xml.etree.ElementTree as ET
+        import glob, os, xml.etree.ElementTree as ET
         files = glob.glob("hdfview/target/surefire-reports/*.xml")
         print("## UI tests (advisory)\n")
         if not files:
@@ -391,18 +391,28 @@ jobs:
         else:
             tot = fail = err = skip = 0
             rows = []
+            bad = []
             for f in sorted(files):
-                r = ET.parse(f).getroot()
+                # A fork killed by a timeout can leave a half-written XML behind. Report that
+                # file as unreadable rather than letting ParseError abort the whole summary
+                # halfway through the table, which looks like the suite simply stopped.
+                try:
+                    r = ET.parse(f).getroot()
+                except Exception as exc:
+                    bad.append((os.path.basename(f), type(exc).__name__))
+                    continue
                 t = int(r.get("tests", 0)); fl = int(r.get("failures", 0))
                 e = int(r.get("errors", 0)); s = int(r.get("skipped", 0))
                 tot += t; fail += fl; err += e; skip += s
                 rows.append((r.get("name", f), t, fl, e, s))
             print(f"**{tot} tests, {fail} failures, {err} errors, {skip} skipped** "
-                  f"across {len(files)} classes\n")
+                  f"across {len(rows)} classes\n")
             print("| Class | Tests | Failures | Errors | Skipped |")
             print("| --- | --- | --- | --- | --- |")
             for n, t, fl, e, s in rows:
                 print(f"| {n} | {t} | {fl} | {e} | {s} |")
+            for n, why in bad:
+                print(f"| {n} | unreadable ({why}) | | | |")
         EOF
         cat $GITHUB_STEP_SUMMARY
 
