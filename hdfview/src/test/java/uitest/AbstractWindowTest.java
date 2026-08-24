@@ -206,7 +206,6 @@ public abstract class AbstractWindowTest {
         });
     }
 
-
     /**
      * Resolve the data directory for one test class from its package.
      *
@@ -265,7 +264,7 @@ public abstract class AbstractWindowTest {
         clearRemovePropertyFile();
 
         if (uiThread == null) {
-            uiThread = new Thread(new Runnable() {
+            uiThread                  = new Thread(new Runnable() {
                 @Override
                 public void run()
                 {
@@ -340,10 +339,9 @@ public abstract class AbstractWindowTest {
                                 {
                                     shell.getDisplay().dispose();
                                 }
-                            });
+                                             });
                         }
                     }
-
                 }
             });
             SWTBotPreferences.TIMEOUT = SWTBOT_TIMEOUT_MS;
@@ -615,8 +613,8 @@ public abstract class AbstractWindowTest {
 
                 /* Close first, but never let the close throw away the message. */
                 closeQuietly(openShell);
-                fail("closeFile() HDFView raised \"" + dialogTitle + "\"" + dialogText +
-                     " and left '" + hdfFile.getName() + "' open");
+                fail("closeFile() HDFView raised \"" + dialogTitle + "\"" + dialogText + " and left '" +
+                     hdfFile.getName() + "' open");
             }
 
             if (deleteFile) {
