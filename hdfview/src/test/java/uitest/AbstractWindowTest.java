@@ -81,7 +81,17 @@ public abstract class AbstractWindowTest {
     // the version of the HDFViewer
     protected static String VERSION = HDFVersions.getPropertyVersionView();
 
-    protected static String workDir = System.getProperty("hdfview.workdir");
+    /*
+     * Root of the UI test data, as surefire configures it. Individual classes resolve their own
+     * directory beneath this - see resolveWorkDir().
+     */
+    private static final String WORKDIR_ROOT = System.getProperty("hdfview.workdir");
+
+    /* Package that the on-disk test data layout mirrors. */
+    private static final String UITEST_ROOT_PACKAGE = "uitest";
+
+    /* Data directory for the class currently running; set in setupApp(). */
+    protected static String workDir = WORKDIR_ROOT;
 
     protected static SWTBot bot;
 
@@ -196,13 +206,66 @@ public abstract class AbstractWindowTest {
         });
     }
 
-    @BeforeAll
-    public static void setupApp()
+
+    /**
+     * Resolve the data directory for one test class from its package.
+     *
+     * The UI test resources mirror the test class packages: a class in uitest.NC3UITests reads
+     * its files from uitest/NC3UITests, and uitest.HDF5UITests.BugFixTests from the matching
+     * two levels down. surefire can only hand us one hdfview.workdir, the root, so every class
+     * outside the uitest package itself used to look one or more directories too high and never
+     * found its files at all.
+     *
+     * Falls back to the root, with a warning, when a package has no matching directory - which
+     * keeps a class whose data really does live at the root working rather than failing with a
+     * confusing "file does not exist".
+     */
+    static String resolveWorkDir(Class<?> testClass)
     {
+        if (WORKDIR_ROOT == null || testClass == null)
+            return WORKDIR_ROOT;
+
+        String pkg = (testClass.getPackage() == null) ? "" : testClass.getPackage().getName();
+        if (!pkg.startsWith(UITEST_ROOT_PACKAGE))
+            return WORKDIR_ROOT;
+
+        String relative = pkg.substring(UITEST_ROOT_PACKAGE.length());
+        if (relative.isEmpty())
+            return WORKDIR_ROOT;
+
+        File resolved = new File(WORKDIR_ROOT, relative.substring(1).replace('.', File.separatorChar));
+        if (!resolved.isDirectory()) {
+            log.warn("no test data directory {} for package {}; falling back to {}", resolved, pkg,
+                     WORKDIR_ROOT);
+            return WORKDIR_ROOT;
+        }
+
+        return resolved.getAbsolutePath();
+    }
+
+    @BeforeAll
+    public static void setupApp(TestInfo testInfo)
+    {
+        workDir = resolveWorkDir(testInfo.getTestClass().orElse(null));
+
+        /*
+         * Move the system property too, not just the field. HDFView's constructor reads
+         * hdfview.workdir directly for currentDir, overriding the startDir it was handed via
+         * ViewProperties, so the app would otherwise still open against the root.
+         *
+         * Safe to mutate because surefire runs one test class per JVM (reuseForks=false in
+         * hdfview/pom.xml). The window is also built once per JVM, so if forks are ever reused
+         * the second class would inherit the first one's directory - revisit this then.
+         */
+        if (workDir != null)
+            System.setProperty("hdfview.workdir", workDir);
+
+        log.trace("setupApp workDir is {}", workDir);
+
         clearRemovePropertyFile();
 
         if (uiThread == null) {
-            uiThread                  = new Thread(new Runnable() {
+            uiThread = new Thread(new Runnable() {
                 @Override
                 public void run()
                 {
@@ -211,7 +274,7 @@ public abstract class AbstractWindowTest {
                         String rootDir     = System.getProperty("hdfview.rootdir");
                         if (rootDir == null)
                             rootDir = System.getProperty("user.dir");
-                        String startDir = System.getProperty("hdfview.workdir");
+                        String startDir = workDir;
 
                         int W = 800, H = 600, X = 0, Y = 0;
 
@@ -277,9 +340,10 @@ public abstract class AbstractWindowTest {
                                 {
                                     shell.getDisplay().dispose();
                                 }
-                                             });
+                            });
                         }
                     }
+
                 }
             });
             SWTBotPreferences.TIMEOUT = SWTBOT_TIMEOUT_MS;
@@ -551,8 +615,8 @@ public abstract class AbstractWindowTest {
 
                 /* Close first, but never let the close throw away the message. */
                 closeQuietly(openShell);
-                fail("closeFile() HDFView raised \"" + dialogTitle + "\"" + dialogText + " and left '" +
-                     hdfFile.getName() + "' open");
+                fail("closeFile() HDFView raised \"" + dialogTitle + "\"" + dialogText +
+                     " and left '" + hdfFile.getName() + "' open");
             }
 
             if (deleteFile) {
