@@ -14,6 +14,7 @@ import hdf.object.h5.H5File;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ public class TestNestedDatatypeShapes {
     @TempDir
     static Path tempDir;
 
+    private static final int WIDE_POINTS   = 50;
+    private static final int WIDE_ELEMENTS = 230;
+
     private static H5File testFile;
     private static int openIDsAtStart;
 
@@ -53,6 +57,10 @@ public class TestNestedDatatypeShapes {
             writeArrayOfArrayInt(fid);
             writeArrayOfCompoundVarStr(fid);
             writeCompoundOfVlenCompound(fid);
+            writeVlenOfFixedString(fid);
+            writeArrayOfFixedString(fid);
+            writeWideVlenOfCompound(fid);
+            writeCompoundWithReference(fid);
         }
         finally {
             H5.H5Fclose(fid);
@@ -236,6 +244,97 @@ public class TestNestedDatatypeShapes {
         }
     }
 
+    /** VLEN of a one-character fixed-length string - a string stored as a sequence. */
+    private static void writeVlenOfFixedString(long fid) throws Exception
+    {
+        long st  = H5.H5Tcopy(HDF5Constants.H5T_C_S1);
+        long tid = H5.H5Tvlen_create(st);
+        try {
+            Object[] buf = {list("a", "b", "c", "d"), list("x", "y")};
+            writeDataset(fid, "vlen_of_fixed_string", tid, 2, buf, true);
+        }
+        finally {
+            H5.H5Tclose(tid);
+            H5.H5Tclose(st);
+        }
+    }
+
+    /** ARRAY[3] of fixed-length string - no variable-length data anywhere. */
+    private static void writeArrayOfFixedString(long fid) throws Exception
+    {
+        long st = H5.H5Tcopy(HDF5Constants.H5T_C_S1);
+        H5.H5Tset_size(st, 8);
+        long tid = H5.H5Tarray_create(st, 1, new long[] {3});
+        try {
+            byte[] buf = new byte[2 * 3 * 8];
+            String[] values = {"alpha", "beta", "gamma", "delta", "epsilon", "zeta"};
+            for (int i = 0; i < values.length; i++)
+                System.arraycopy(values[i].getBytes("US-ASCII"), 0, buf, i * 8,
+                                 values[i].length());
+            writeDataset(fid, "array_of_fixed_string", tid, 2, buf, false);
+        }
+        finally {
+            H5.H5Tclose(tid);
+            H5.H5Tclose(st);
+        }
+    }
+
+    /** VLEN of COMPOUND wide enough to catch anything that scales with element count. */
+    private static void writeWideVlenOfCompound(long fid) throws Exception
+    {
+        long inner = pqCompoundType();
+        long tid   = H5.H5Tvlen_create(inner);
+        try {
+            Object[] buf = new Object[WIDE_POINTS];
+            for (int i = 0; i < WIDE_POINTS; i++) {
+                ArrayList<Object> seq = new ArrayList<>();
+                for (int j = 0; j < WIDE_ELEMENTS; j++)
+                    seq.add(list(i, j));
+                buf[i] = seq;
+            }
+            writeDataset(fid, "wide_vlen_of_compound", tid, WIDE_POINTS, buf, true);
+        }
+        finally {
+            H5.H5Tclose(tid);
+            H5.H5Tclose(inner);
+        }
+    }
+
+    /** COMPOUND mixing a VLEN of compound, a variable-length string and an object reference. */
+    private static void writeCompoundWithReference(long fid) throws Exception
+    {
+        long gid = H5.H5Gcreate(fid, "referenced_group", HDF5Constants.H5P_DEFAULT,
+                                HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
+        H5.H5Gclose(gid);
+        byte[] ref = H5.H5Rcreate_object(fid, "referenced_group", HDF5Constants.H5P_DEFAULT);
+
+        long inner  = pqCompoundType();
+        long vt     = H5.H5Tvlen_create(inner);
+        long vs     = varStrType();
+        long rt     = H5.H5Tcopy(HDF5Constants.H5T_STD_REF_OBJ);
+        long vtSize = H5.H5Tget_size(vt);
+        long vsSize = H5.H5Tget_size(vs);
+        long rtSize = H5.H5Tget_size(rt);
+        long tid    = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, vtSize + vsSize + rtSize);
+        H5.H5Tinsert(tid, "seq", 0, vt);
+        H5.H5Tinsert(tid, "label", vtSize, vs);
+        H5.H5Tinsert(tid, "target", vtSize + vsSize, rt);
+        try {
+            byte[] shortRef = new byte[(int)rtSize];
+            System.arraycopy(ref, 0, shortRef, 0, Math.min(ref.length, shortRef.length));
+            Object[] buf = {list(list(list(1, 2), list(3, 4)), "first", shortRef),
+                            list(list(list(5, 6)), "second", shortRef)};
+            writeDataset(fid, "compound_with_reference", tid, 2, buf, true);
+        }
+        finally {
+            H5.H5Tclose(tid);
+            H5.H5Tclose(rt);
+            H5.H5Tclose(vs);
+            H5.H5Tclose(vt);
+            H5.H5Tclose(inner);
+        }
+    }
+
     // ---- helpers --------------------------------------------------------------
 
     private static Dataset open(String name) throws Exception
@@ -333,5 +432,66 @@ public class TestNestedDatatypeShapes {
         assertTrue(rendered.contains("[1, 2]"), "Expected first record's nested element: " + rendered);
         assertTrue(rendered.contains("[3, 4]"), "Expected second record's first element: " + rendered);
         assertTrue(rendered.contains("[5, 6]"), "Expected second record's second element: " + rendered);
+    }
+
+    @Test
+    @Disabled // depends on the JNI reading fixed-length strings past their element
+    @DisplayName("VLEN of fixed-length string")
+    public void testVlenOfFixedString() throws Exception
+    {
+        assertEquals("[[a, b, c, d], [x, y]]", render(open("vlen_of_fixed_string").getData()));
+    }
+
+    @Test
+    @DisplayName("Array of fixed-length string")
+    public void testArrayOfFixedString() throws Exception
+    {
+        Object data = open("array_of_fixed_string").getData();
+
+        /*
+         * A fixed-length string is not variable-length data, so this takes the flat path
+         * and comes back as the raw bytes of every element rather than one list per
+         * point. Asserted because it is the boundary the variable-length detection has
+         * to get right: a string array that must not be treated as an object buffer.
+         */
+        assertInstanceOf(byte[].class, data, "Expected a flat byte[]");
+        assertEquals(2 * 3 * 8, ((byte[])data).length, "2 points x 3 elements x 8 bytes");
+
+        String text = new String((byte[])data, "US-ASCII");
+        for (String value : new String[] {"alpha", "beta", "gamma", "delta", "epsilon", "zeta"})
+            assertTrue(text.contains(value), "Expected element " + value);
+    }
+
+    @Test
+    @DisplayName("VLEN of compound at width")
+    public void testWideVlenOfCompound() throws Exception
+    {
+        Object data = open("wide_vlen_of_compound").getData();
+
+        assertInstanceOf(Object[].class, data);
+        Object[] points = (Object[])data;
+        assertEquals(WIDE_POINTS, points.length, "point count");
+
+        for (int i = 0; i < points.length; i++) {
+            List<?> seq = (List<?>)points[i];
+            assertEquals(WIDE_ELEMENTS, seq.size(), "element count at point " + i);
+            assertEquals(List.of(i, WIDE_ELEMENTS - 1), seq.get(WIDE_ELEMENTS - 1),
+                         "last element of point " + i);
+        }
+    }
+
+    @Test
+    @DisplayName("Compound holding a VLEN, a variable-length string and a reference")
+    public void testCompoundWithReference() throws Exception
+    {
+        Object data = open("compound_with_reference").getData();
+        assertNotNull(data);
+
+        List<?> members = (List<?>)data;
+        assertEquals(3, members.size(), "Expected members seq, label and target");
+
+        assertEquals("[[[1, 2], [3, 4]], [[5, 6]]]", render(members.get(0)));
+        assertEquals("[first, second]", render(members.get(1)));
+        assertNotNull(members.get(2), "reference member should be read");
     }
 }
