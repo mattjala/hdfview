@@ -2,7 +2,9 @@ package object;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -493,5 +495,43 @@ public class TestNestedDatatypeShapes {
         assertEquals("[[[1, 2], [3, 4]], [[5, 6]]]", render(members.get(0)));
         assertEquals("[first, second]", render(members.get(1)));
         assertNotNull(members.get(2), "reference member should be read");
+    }
+
+    @Test
+    @DisplayName("Writing a VLEN of compound is refused")
+    public void testVlenOfCompoundWriteRefused(@TempDir Path writeDir) throws Exception
+    {
+        Path target = writeDir.resolve("refused.h5");
+        Files.copy(Path.of(testFile.getFilePath()), target, StandardCopyOption.REPLACE_EXISTING);
+
+        H5File rw = (H5File)(new H5File()).createInstance(target.toString(), FileFormat.WRITE);
+        rw.open();
+        try {
+            Dataset dataset = (Dataset)rw.get("/vlen_of_compound");
+            dataset.init();
+            Object data = dataset.getData();
+
+            /*
+             * There is no way to map an edited cell of this shape back to storage, so the
+             * write must fail rather than report success having stored nothing.
+             */
+            assertThrows(Exception.class, () -> dataset.write(data),
+                         "Writing a VLEN of compound should be refused");
+        }
+        finally {
+            rw.close();
+        }
+
+        // The refusal must also leave the data as it was.
+        H5File check = (H5File)(new H5File()).createInstance(target.toString(), FileFormat.READ);
+        check.open();
+        try {
+            Dataset dataset = (Dataset)check.get("/vlen_of_compound");
+            dataset.init();
+            assertEquals("[[[10, 11], [20, 21]], [[30, 31]]]", render(dataset.getData()));
+        }
+        finally {
+            check.close();
+        }
     }
 }
