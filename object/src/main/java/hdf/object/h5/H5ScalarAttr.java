@@ -1210,8 +1210,7 @@ public class H5ScalarAttr extends ScalarDS implements H5Attribute {
                 else if (dsDatatype.isVLEN()) {
                     log.trace("attributeCommonIO():read ioType:VLEN-REF H5Aread isArray()={}",
                               dsDatatype.isArray());
-                    // Slots are left null: H5AreadVL installs a freshly
-                    // allocated ArrayList into each slot.
+                    // Slots are left null; H5AreadVL allocates each list.
                     theData = new ArrayList[(int)lsize];
 
                     try {

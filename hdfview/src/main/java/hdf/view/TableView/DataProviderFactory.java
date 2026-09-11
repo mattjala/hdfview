@@ -74,9 +74,6 @@ public class DataProviderFactory {
 
         dataFormatReference = dataObject;
 
-        // A top-level vlen-of-compound is a single column showing the whole sequence, so
-        // dispatch on the dataset's own datatype: getDataProvider(VLEN) makes a
-        // VlenDataProvider (read path supplies one bare ArrayList[] of nested-List elements).
         HDFDataProvider dataProvider =
             getDataProvider(dataObject.getDatatype(), dataBuf, dataTransposed);
 
@@ -326,7 +323,7 @@ public class DataProviderFactory {
                 else if (obj != null && obj.getClass().isArray())
                     theValue = Array.get(obj, index);
                 else
-                    // Scalar input: row dimension already resolved by the caller.
+                    // The caller already resolved the row dimension.
                     theValue = obj;
             }
             catch (Exception ex) {
@@ -792,10 +789,7 @@ public class DataProviderFactory {
                         theValue, rowIdx, adjustedColIndex);
                 }
                 else if (base instanceof VlenDataProvider) {
-                    // A vlen member is a single column showing the whole sequence. Delegate
-                    // to the provider's full-sequence rendering (an array of per-element
-                    // values that the VlenDataDisplayConverter joins into a brace-string),
-                    // rather than fetching one element by column offset.
+                    // A vlen member is one column holding the whole sequence.
                     theValue = base.getDataValue(colValue, fieldIdx, rowIdx);
                 }
                 else {
@@ -1069,6 +1063,9 @@ public class DataProviderFactory {
 
         private final int nCols;
 
+        /** Whether the array's base type is a variable-length string. */
+        private final boolean isVarStrBase;
+
         ArrayDataProvider(final Datatype dtype, final Object dataBuf, final boolean dataTransposed)
             throws Exception
         {
@@ -1094,6 +1091,35 @@ public class DataProviderFactory {
                 nCols = (int)arraySize * ((CompoundDataProvider)baseTypeDataProvider).nCols;
             else
                 nCols = super.getColumnCount();
+
+            isVarStrBase = baseType.isVarStr();
+        }
+
+        /**
+         * Return this array's elements for one selected point, or null when the buffer is
+         * a flat run of base-type values rather than a List per point.
+         */
+        private Object[] retrieveObjectModelElements(Object objBuf, int pointIndex)
+        {
+            if (!(objBuf instanceof Object[] slots))
+                return null;
+            if (pointIndex < 0 || pointIndex >= slots.length)
+                return null;
+            if (!(slots[pointIndex] instanceof List<?> elements))
+                return null;
+
+            Object[] values = new Object[elements.size()];
+            for (int i = 0; i < values.length; i++) {
+                Object element = elements.get(i);
+
+                // Opaque, reference and bitfield elements arrive as raw bytes.
+                if (element instanceof byte[])
+                    values[i] = baseTypeDataProvider.getDataValue(element, 0);
+                else
+                    values[i] = element;
+            }
+
+            return values;
         }
 
         @Override
@@ -1102,6 +1128,10 @@ public class DataProviderFactory {
             log.trace("getDataValue(rowIndex={}, columnIndex={}): start", rowIndex, columnIndex);
             try {
                 int bufIndex = physicalLocationToBufIndex(rowIndex, columnIndex);
+
+                Object[] objModelElements = retrieveObjectModelElements(dataBuf, bufIndex);
+                if (objModelElements != null)
+                    return theValue = objModelElements;
 
                 bufIndex *= arraySize;
 
@@ -1152,6 +1182,10 @@ public class DataProviderFactory {
         {
             log.trace("getDataValue(obj={} rowIndex={}, columnIndex={}): start", obj, rowIndex, columnIndex);
             try {
+                Object[] objModelElements = retrieveObjectModelElements(obj, rowIndex);
+                if (objModelElements != null)
+                    return theValue = objModelElements;
+
                 long index = rowIndex * arraySize;
 
                 if (baseTypeDataProvider instanceof CompoundDataProvider) {
@@ -1251,9 +1285,15 @@ public class DataProviderFactory {
             try {
                 int bufIndex = physicalLocationToBufIndex(rowIndex, columnIndex);
 
+                if (updateObjectModelElements(dataBuf, newValue, bufIndex))
+                    return;
+
                 bufIndex *= arraySize;
 
                 updateArrayElements(dataBuf, newValue, columnIndex, bufIndex);
+            }
+            catch (UnsupportedOperationException uoe) {
+                throw uoe;
             }
             catch (Exception ex) {
                 log.debug("setDataValue({}, {}, {}): cell value update failure: ", rowIndex, columnIndex,
@@ -1266,9 +1306,15 @@ public class DataProviderFactory {
         public void setDataValue(int columnIndex, int rowIndex, Object bufObject, Object newValue)
         {
             try {
+                if (updateObjectModelElements(bufObject, newValue, rowIndex))
+                    return;
+
                 long bufIndex = rowIndex * arraySize;
 
                 updateArrayElements(bufObject, newValue, columnIndex, (int)bufIndex);
+            }
+            catch (UnsupportedOperationException uoe) {
+                throw uoe;
             }
             catch (Exception ex) {
                 log.debug("setDataValue({}, {}, {}, {}): cell value update failure: ", rowIndex, columnIndex,
@@ -1282,6 +1328,41 @@ public class DataProviderFactory {
         {
             throw new UnsupportedOperationException(
                 "setDataValue(int, Object, Object) should not be called for ArrayDataProviders");
+        }
+
+        /**
+         * Write one cell back into the List held in this point's slot, returning false if
+         * the buffer is not in that layout.
+         */
+        private boolean updateObjectModelElements(Object curBuf, Object newValue, int pointIndex)
+        {
+            if (!(curBuf instanceof Object[] slots) || pointIndex < 0 || pointIndex >= slots.length)
+                return false;
+            if (!(slots[pointIndex] instanceof List<?> elements))
+                return false;
+
+            // The bracketed cell text is only unambiguous when the elements are scalars.
+            if (!isVarStrBase)
+                throw new UnsupportedOperationException(
+                    "editing an array of variable-length data is only supported for strings");
+
+            StringTokenizer st = new StringTokenizer((String)newValue, ",[]");
+            if (st.countTokens() < arraySize) {
+                log.trace("updateObjectModelElements(): number of data points ({}) < array size {}",
+                          st.countTokens(), arraySize);
+                return true;
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Object> target = (List<Object>)elements;
+            for (int i = 0; i < arraySize && i < target.size(); i++) {
+                String token = st.nextToken().trim();
+                if (!token.equals(target.get(i))) {
+                    target.set(i, token);
+                    isValueChanged = true;
+                }
+            }
+            return true;
         }
 
         private void updateArrayElements(Object curBuf, Object newValue, int columnIndex, int bufStartIndex)
@@ -1575,13 +1656,8 @@ public class DataProviderFactory {
         @Override
         public void setDataValue(int columnIndex, int rowIndex, Object newValue)
         {
-            /*
-             * The read path returns a vlen-of-compound cell as the whole sequence
-             * (see retrieveArrayOfCompoundElements), but the write path below still
-             * addresses one inner member per column. A single-cell edit therefore
-             * cannot be mapped back to storage. Per the IDataProvider contract,
-             * refuse the write rather than corrupting the buffer.
-             */
+            // A vlen-of-compound cell is the whole sequence, which no per-member write
+            // can be derived from.
             if (baseTypeDataProvider instanceof CompoundDataProvider)
                 throw new UnsupportedOperationException(
                     "editing a variable-length sequence of compound values is not supported");
@@ -1605,13 +1681,8 @@ public class DataProviderFactory {
         @Override
         public void setDataValue(int columnIndex, int rowIndex, Object bufObject, Object newValue)
         {
-            /*
-             * The read path returns a vlen-of-compound cell as the whole sequence
-             * (see retrieveArrayOfCompoundElements), but the write path below still
-             * addresses one inner member per column. A single-cell edit therefore
-             * cannot be mapped back to storage. Per the IDataProvider contract,
-             * refuse the write rather than corrupting the buffer.
-             */
+            // A vlen-of-compound cell is the whole sequence, which no per-member write
+            // can be derived from.
             if (baseTypeDataProvider instanceof CompoundDataProvider)
                 throw new UnsupportedOperationException(
                     "editing a variable-length sequence of compound values is not supported");
@@ -1656,19 +1727,6 @@ public class DataProviderFactory {
         private void updateArrayOfCompoundElements(Object newValue, Object curBuf, int columnIndex,
                                                    int rowIndex)
         {
-            long vlSize = Array.getLength(curBuf);
-            log.trace("updateArrayOfCompoundElements(): vlSize={}", vlSize);
-            long adjustedRowIdx =
-                (rowIndex * vlSize * colCount) +
-                (columnIndex / ((CompoundDataProvider)baseTypeDataProvider).baseProviderIndexMap.size());
-            long adjustedColIdx =
-                columnIndex % ((CompoundDataProvider)baseTypeDataProvider).baseProviderIndexMap.size();
-
-            /*
-             * Unreachable: setDataValue refuses vlen-of-compound above. Retained only so the
-             * asymmetry is visible here too - this arithmetic predates the single-column read
-             * model and no longer matches it.
-             */
             throw new UnsupportedOperationException(
                 "editing a variable-length sequence of compound values is not supported");
         }

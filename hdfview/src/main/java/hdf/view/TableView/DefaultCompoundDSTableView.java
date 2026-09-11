@@ -750,12 +750,10 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                           fieldIndex);
 
                 /*
-                 * The column index map is built from the compound's member list, while the
-                 * display may cover more columns than there are members (array-of-compound,
-                 * vlen-of-compound). A column outside the map therefore has no single member
-                 * type to inspect. Reference detection is best-effort - skip it in that case
-                 * and still update the cell label and value field below.
-                 */
+                  * The display may cover more columns than the compound has members, so a
+                  * column can fall outside the map. Reference detection is best-effort;
+                  * the label and value field below are updated either way.
+                  */
                 Integer bIndexObj = baseIndexMap.get(fieldIndex - 1);
                 if (bIndexObj == null) {
                     log.debug("CompoundDSCellSelectionListener: no member mapping for column {}",
@@ -868,8 +866,7 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
 
             Datatype cmpdType = dataObject.getDatatype();
 
-            // A top-level vlen-of-compound is a single column (the whole sequence). It is not
-            // a compound, so it has no members to filter - use it directly as the sole type.
+            // A top-level vlen is one column and has no members to filter.
             List<Datatype> selectedTypes;
             if (cmpdType.isVLEN() && !cmpdType.isVarStr())
                 selectedTypes = new ArrayList<>(java.util.Collections.singletonList(cmpdType));
@@ -974,17 +971,14 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                                            memberTypes);
             }
             else if (curDtype.isVLEN() && !curDtype.isVarStr()) {
-                // A top-level vlen (including vlen-of-compound) is a single column showing
-                // the whole sequence. Never recurse into a compound base - that would create
-                // one column per inner member.
+                // A top-level vlen is one column holding the whole sequence.
                 for (int j = 0; j < memberNames.size(); j++)
                     outColNames.add(memberNames.get(j).replaceAll(CompoundDS.SEPARATOR, "->"));
             }
             else if (curDtype.isCompound()) {
                 /*
-                 * memberNames is the flat list of leaf names; memberTypes is the list of
-                 * top-level member types. Advance through memberTypes one slot at a time,
-                 * consuming countLeafNames(topType) flat names per slot.
+                 * memberNames is flat leaf names, memberTypes top-level member types;
+                 * each type consumes countLeafNames() of the names.
                  */
                 ListIterator<String> localIt = memberNames.listIterator();
                 int topIdx                   = 0;
@@ -1000,9 +994,8 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                     boolean nestedArrayOfCompound      = false;
 
                     /*
-                     * Recursively detect any nested ARRAY of compound types and deal with them
-                     * by creating multiple copies of the member names. A vlen is NOT expanded -
-                     * it is a single column (handled below), so it is excluded here.
+                     * A nested ARRAY of compound repeats the member names once per
+                     * element. A vlen is one column and is handled below.
                      */
                     if (curType.isArray()) {
                         Datatype base = curType.getDatatypeBase();
@@ -1028,9 +1021,8 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                         List<String> selMemberNames;
                         int namesConsumed;
                         if (curType.isVLEN()) {
-                            // Vlen wraps the flat name list at the header level only;
-                            // synthesize the inner-compound leaf names from the declared
-                            // member-name list, using the header as prefix.
+                            // A vlen contributes only a header name, so synthesize the
+                            // inner leaf names from it.
                             String baseName = curName.replaceAll(CompoundDS.SEPARATOR, "->");
                             selMemberNames = buildInnerCompoundLeafNames(nestedArrayOfCompoundType, baseName);
                             namesConsumed  = 1;
@@ -1050,8 +1042,7 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                         remainingLeavesInTop -= namesConsumed;
                     }
                     else if (curType.isVLEN() && !curType.isVarStr()) {
-                        // A vlen member is a single column showing the whole sequence as a
-                        // brace-string (VlenDataProvider recurses for nested compounds).
+                        // A vlen member is one column holding the whole sequence.
                         String baseName = curName.replaceAll(CompoundDS.SEPARATOR, "->");
                         outColNames.add(baseName);
                         remainingLeavesInTop--;
@@ -1067,11 +1058,7 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
             }
         }
 
-        /**
-         * Produce "prefix-&gt;leaf" names for each leaf of {@code innerCompound}.
-         * Used by the vlen-of-compound header path, whose flat name list contains
-         * only the wrapper header rather than per-leaf entries.
-         */
+        /** Produce "prefix-&gt;leaf" names for each leaf of {@code innerCompound}. */
         private List<String> buildInnerCompoundLeafNames(Datatype innerCompound, String prefix)
         {
             List<String> out = new ArrayList<>();
@@ -1245,11 +1232,7 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                                 colindex);
                     }
                     else if (allColumnNames[i].matches(".*\\[[0-9]*\\]")) {
-                        /*
-                         * Top-level array/vlen of an atomic base. Each element is a single
-                         * column, so group them all under the member name rather than a
-                         * generic per-element "ARRAY[i]" group.
-                         */
+                        // Group every element under the member name.
                         String baseName = allColumnNames[i].replaceAll("\\[[0-9]*\\]$", "");
                         columnHeaderBuilder.append(baseName);
 
