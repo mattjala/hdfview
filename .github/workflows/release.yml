@@ -17,12 +17,12 @@ on:
         description: 'HDF4 version number (e.g., 4.3.1) - ignored for snapshots'
         type: string
         required: false
-        default: '4.3.1'
+        default: '4.4.0'
       hdf5_version:
         description: 'HDF5 version number (e.g., 2.0.0) - ignored for snapshots'
         type: string
         required: false
-        default: '2.0.0'
+        default: '2.2.0'
 
 permissions:
   contents: read

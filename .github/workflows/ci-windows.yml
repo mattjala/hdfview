@@ -7,24 +7,24 @@ on:
         description: 'HDF4 version to use'
         type: string
         required: false
-        default: '4.3.1'
+        default: '4.4.0'
       hdf5_version:
         description: 'HDF5 version to use'
         type: string
         required: false
-        default: '2.0.0'
+        default: '2.2.0'
   workflow_dispatch:
     inputs:
       hdf4_version:
         description: 'HDF4 version to use'
         type: string
         required: false
-        default: '4.3.1'
+        default: '4.4.0'
       hdf5_version:
         description: 'HDF5 version to use'
         type: string
         required: false
-        default: '2.0.0'
+        default: '2.2.0'
 
 permissions:
   contents: read
@@ -89,7 +89,7 @@ jobs:
       run: |
         $HDF4_VERSION = "${{ inputs.hdf4_version }}"
         Write-Host "Downloading HDF4 $HDF4_VERSION release..."
-        $PATTERN = "hdf$HDF4_VERSION-win-vs2022_cl.zip"
+        $PATTERN = "hdf$HDF4_VERSION-win-vs2026_cl.zip"
         Write-Host "Using pattern: $PATTERN"
         gh release download hdf$HDF4_VERSION `
           --repo HDFGroup/hdf4 `
@@ -97,7 +97,7 @@ jobs:
           --clobber
 
         Write-Host "Extracting HDF4..."
-        7z x -y *-win-vs2022_cl.zip
+        7z x -y *-win-vs2026_cl.zip
         Set-Location hdf4
         7z x -y HDF-*-win64.zip
 
@@ -117,11 +117,11 @@ jobs:
         Write-Host "Downloading HDF5 $HDF5_VERSION release..."
         gh release download $HDF5_VERSION `
           --repo HDFGroup/hdf5 `
-          --pattern "hdf5-$HDF5_VERSION-win-vs2022_cl.zip" `
+          --pattern "hdf5-$HDF5_VERSION-win-vs2026_cl.zip" `
           --clobber
 
         Write-Host "Extracting HDF5..."
-        7z x -y hdf5-*-win-vs2022_cl.zip
+        7z x -y hdf5-*-win-vs2026_cl.zip
         Set-Location hdf5
         7z x -y HDF5-*-win64.zip
 

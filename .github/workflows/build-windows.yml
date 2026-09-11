@@ -85,7 +85,7 @@ jobs:
         run: |
           Write-Host "Downloading HDF4 from release tag: ${{ inputs.hdf4_release_tag }}"
           
-          $PATTERN = "${{ inputs.hdf4_artifact_basename }}-win-vs2022_cl.zip"
+          $PATTERN = "${{ inputs.hdf4_artifact_basename }}-win-vs2026_cl.zip"
           Write-Host "Using pattern: $PATTERN"
 
           gh release download "${{ inputs.hdf4_release_tag }}" `
@@ -94,7 +94,7 @@ jobs:
               --clobber
 
           Write-Host "Extracting HDF4..."
-          7z x *-win-vs2022_cl.zip
+          7z x *-win-vs2026_cl.zip
           # Rename hdf4-* directory to hdf4 if needed
           $hdf4Dir = Get-ChildItem -Directory -Filter "hdf4*" | Select-Object -First 1
           if ($hdf4Dir.Name -ne "hdf4") {
@@ -122,7 +122,7 @@ jobs:
         run: |
           Write-Host "Downloading HDF5 from release tag: ${{ inputs.hdf5_release_tag }}"
 
-          $PATTERN = "${{ inputs.hdf5_prefix }}${{ inputs.hdf5_artifact_basename }}-win-vs2022_cl.zip"
+          $PATTERN = "${{ inputs.hdf5_prefix }}${{ inputs.hdf5_artifact_basename }}-win-vs2026_cl.zip"
           Write-Host "Using pattern: $PATTERN"
 
           gh release download "${{ inputs.hdf5_release_tag }}" `
@@ -131,7 +131,7 @@ jobs:
               --clobber
 
           Write-Host "Extracting HDF5..."
-          7z x hdf5-*-win-vs2022_cl.zip
+          7z x hdf5-*-win-vs2026_cl.zip
           # Rename hdf5-* directory to hdf5 if needed
           $hdf5Dir = Get-ChildItem -Directory -Filter "hdf5*" | Select-Object -First 1
           if ($hdf5Dir.Name -ne "hdf5") {
@@ -364,11 +364,11 @@ jobs:
           run: |
             Write-Host "Downloading HDF4 from release tag: ${{ inputs.hdf4_release_tag }}"
   
-            $PATTERN = "${{ inputs.hdf4_artifact_basename }}-win-vs2022_cl.zip"
+            $PATTERN = "${{ inputs.hdf4_artifact_basename }}-win-vs2026_cl.zip"
             Write-Host "Using pattern: $PATTERN"
   
             gh release download "${{ inputs.hdf4_release_tag }}" --repo HDFGroup/hdf4 --pattern $PATTERN --clobber
-            7z x *-win-vs2022_cl.zip
+            7z x *-win-vs2026_cl.zip
             # Rename hdf4-* directory to hdf4 if needed
             $hdf4Dir = Get-ChildItem -Directory -Filter "hdf4*" | Select-Object -First 1
             if ($hdf4Dir.Name -ne "hdf4") {
@@ -391,11 +391,11 @@ jobs:
           run: |
             Write-Host "Downloading HDF5 from release tag: ${{ inputs.hdf5_release_tag }}"
   
-            $PATTERN = "${{ inputs.hdf5_prefix }}${{ inputs.hdf5_artifact_basename }}-win-vs2022_cl.zip"
+            $PATTERN = "${{ inputs.hdf5_prefix }}${{ inputs.hdf5_artifact_basename }}-win-vs2026_cl.zip"
             Write-Host "Using pattern: $PATTERN"
   
             gh release download "${{ inputs.hdf5_release_tag }}" --repo HDFGroup/hdf5 --pattern $PATTERN --clobber
-            7z x hdf5-*-win-vs2022_cl.zip
+            7z x hdf5-*-win-vs2026_cl.zip
             # Rename hdf5-* directory to hdf5 if needed
             $hdf5Dir = Get-ChildItem -Directory -Filter "hdf5*" | Select-Object -First 1
             if ($hdf5Dir.Name -ne "hdf5") {
