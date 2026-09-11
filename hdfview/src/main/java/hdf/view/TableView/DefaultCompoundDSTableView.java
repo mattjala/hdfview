@@ -325,6 +325,9 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                  * limitation.
                  */
                 // return !(isReadOnly || isDisplayTypeChar || showAsBin || showAsHex);
+                if (!dataProvider.isCellEditable(columnIndex, rowIndex))
+                    return false;
+
                 return !isReadOnly;
             }
         };

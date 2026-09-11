@@ -337,6 +337,20 @@ public class DataProviderFactory {
         }
 
         /**
+         * Whether this cell can be written back. A provider that cannot map a displayed
+         * cell to storage returns false, so the table declines to open an editor rather
+         * than rejecting the value after the user has typed it.
+         *
+         * @param columnIndex
+         *        the column
+         * @param rowIndex
+         *        the row
+         *
+         * @return true when the cell can be edited
+         */
+        public boolean isCellEditable(int columnIndex, int rowIndex) { return true; }
+
+        /**
          * update the data value of a compound type.
          *
          * @param columnIndex
@@ -857,6 +871,19 @@ public class DataProviderFactory {
         }
 
         @Override
+        public boolean isCellEditable(int columnIndex, int rowIndex)
+        {
+            try {
+                int fieldIdx = columnIndex % getColumnCount();
+                return baseTypeProviders[baseProviderIndexMap.get(fieldIdx)].isCellEditable(fieldIdx,
+                                                                                            rowIndex);
+            }
+            catch (Exception ex) {
+                return true;
+            }
+        }
+
+        @Override
         public void setDataValue(int columnIndex, int rowIndex, Object newValue)
         {
             log.trace("CompoundDataProvider.setDataValue: columnIndex={}, rowIndex={}, newValue={}",
@@ -1280,6 +1307,16 @@ public class DataProviderFactory {
         }
 
         @Override
+        public boolean isCellEditable(int columnIndex, int rowIndex)
+        {
+            int bufIndex = physicalLocationToBufIndex(rowIndex, columnIndex);
+            if (dataBuf instanceof Object[] slots && bufIndex >= 0 && bufIndex < slots.length &&
+                slots[bufIndex] instanceof List)
+                return isVarStrBase;
+            return true;
+        }
+
+        @Override
         public void setDataValue(int columnIndex, int rowIndex, Object newValue)
         {
             try {
@@ -1651,6 +1688,12 @@ public class DataProviderFactory {
         {
             throw new UnsupportedOperationException(
                 "getDataValue(Object, int) should not be called for VlenDataProviders");
+        }
+
+        @Override
+        public boolean isCellEditable(int columnIndex, int rowIndex)
+        {
+            return !(baseTypeDataProvider instanceof CompoundDataProvider);
         }
 
         @Override
