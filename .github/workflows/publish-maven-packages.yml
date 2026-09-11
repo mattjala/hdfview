@@ -143,9 +143,9 @@ jobs:
             JAR_PATH="/usr/share/java/jarhdf.jar"
             # System jarhdf.jar typically doesn't have version in filename, check actual file
             if jar -tf "$JAR_PATH" | grep -q "MANIFEST.MF"; then
-              HDF4_VERSION=$(unzip -p "$JAR_PATH" META-INF/MANIFEST.MF | grep "Implementation-Version" | cut -d' ' -f2 | tr -d '\r' || echo "4.3.1")
+              HDF4_VERSION=$(unzip -p "$JAR_PATH" META-INF/MANIFEST.MF | grep "Implementation-Version" | cut -d' ' -f2 | tr -d '\r' || echo "4.4.0")
             else
-              HDF4_VERSION="4.3.1"
+              HDF4_VERSION="4.4.0"
             fi
             mvn install:install-file -Dfile="$JAR_PATH" \
               -DgroupId=jarhdf -DartifactId=jarhdf -Dversion="$HDF4_VERSION" \

@@ -121,12 +121,12 @@ jobs:
 
         - name: Download and Install HDF5 from GitHub
           run: |
-            PATTERN="${{ inputs.hdf5_prefix }}${{ inputs.hdf5_artifact_basename }}-macos14_clang.tar.gz"
+            PATTERN="${{ inputs.hdf5_prefix }}${{ inputs.hdf5_artifact_basename }}-macos15_clang.tar.gz"
             echo "Using pattern: $PATTERN"
 
             gh release download "${{ inputs.hdf5_release_tag }}" --repo HDFGroup/hdf5 --pattern "$PATTERN" \
               --clobber
-            tar -zxvf hdf5-*-macos14_clang.tar.gz
+            tar -zxvf hdf5-*-macos15_clang.tar.gz
             [ -d hdf5 ] || mv hdf5-* hdf5
             cd hdf5
             tar -zxvf HDF5-*-Darwin.tar.gz --strip-components 1

@@ -10,14 +10,14 @@ Before following these steps to build HDFView from source, you will need to have
 ### Linux (Ubuntu)
 ```bash
 # Download HDF libraries
-gh release download hdf4.3.1 --repo HDFGroup/hdf4 --pattern "hdf4.3.1-ubuntu-2404_gcc.tar.gz"
-gh release download 2.0.0 --repo HDFGroup/hdf5 --pattern "hdf5-2.0.0-ubuntu-2404_gcc.tar.gz"
+gh release download hdf4.4.0 --repo HDFGroup/hdf4 --pattern "hdf4.4.0-ubuntu-2404_gcc.tar.gz"
+gh release download 2.2.0 --repo HDFGroup/hdf5 --pattern "hdf5-2.2.0-ubuntu-2404_gcc.tar.gz"
 
 # Extract (nested structure)
-tar -zxvf hdf4.3.1-ubuntu-2404_gcc.tar.gz
+tar -zxvf hdf4.4.0-ubuntu-2404_gcc.tar.gz
 cd hdf4 && tar -zxvf HDF-*-Linux.tar.gz --strip-components 1
 cd ..
-tar -zxvf hdf5-2.0.0-ubuntu-2404_gcc.tar.gz
+tar -zxvf hdf5-2.2.0-ubuntu-2404_gcc.tar.gz
 cd hdf5 && tar -zxvf HDF5-*-Linux.tar.gz
 
 # Modify build.properties to populate hdf5.lib.dir, hdf5.plugin.dir,
@@ -38,15 +38,15 @@ mvn package -DskipTests
 ### Windows (PowerShell)
 ```powershell
 # Download HDF libraries
-gh release download hdf4.3.1 --repo HDFGroup/hdf4 --pattern "hdf4.3.1-win-vs2022_cl.zip"
-gh release download 2.0.0 --repo HDFGroup/hdf5 --pattern "hdf5-2.0.0-win-vs2022_cl.zip"
+gh release download hdf4.4.0 --repo HDFGroup/hdf4 --pattern "hdf4.4.0-win-vs2026_cl.zip"
+gh release download 2.2.0 --repo HDFGroup/hdf5 --pattern "hdf5-2.2.0-win-vs2026_cl.zip"
 
 # Extract (flat structure)
-7z x hdf4.3.1-win-vs2022_cl.zip
+7z x hdf4.4.0-win-vs2026_cl.zip
 cd hdf4
 7z x HDF-*-win64.zip
 cd ..
-7z x hdf5-2.0.0-win-vs2022_cl.zip
+7z x hdf5-2.2.0-win-vs2026_cl.zip
 cd hdf5
 7z x HDF5-*-win64.zip
 
@@ -69,14 +69,14 @@ run-hdfview.bat
 ### macOS (Bash)
 ```bash
 # Download HDF libraries
-gh release download hdf4.3.1 --repo HDFGroup/hdf4 --pattern "hdf4.3.1-macos14_clang.tar.gz"
-gh release download 2.0.0 --repo HDFGroup/hdf5 --pattern "hdf5-2.0.0-macos14_clang.tar.gz"
+gh release download hdf4.4.0 --repo HDFGroup/hdf4 --pattern "hdf4.4.0-macos14_clang.tar.gz"
+gh release download 2.2.0 --repo HDFGroup/hdf5 --pattern "hdf5-2.2.0-macos15_clang.tar.gz"
 
 # Extract (nested structure)
-tar -zxvf hdf4.3.1-macos14_clang.tar.gz
+tar -zxvf hdf4.4.0-macos14_clang.tar.gz
 cd hdf4 && tar -zxvf HDF-*-Darwin.tar.gz --strip-components 1
 cd ..
-tar -zxvf hdf5-2.0.0-macos14_clang.tar.gz
+tar -zxvf hdf5-2.2.0-macos15_clang.tar.gz
 cd hdf5 && tar -zxvf HDF5-*-Darwin.tar.gz
 
 # Modify build.properties to populate hdf5.lib.dir, hdf5.plugin.dir,
