@@ -949,33 +949,26 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
              * transfer it in a single call; the JNI parses each compound element into a
              * nested List. The dataset enumerates a single member, hence one column.
              */
-            boolean isRead = (ioType == H5File.IO_TYPE.READ);
-            long wholeTid  = -1;
+            if (ioType != H5File.IO_TYPE.READ)
+                throw new UnsupportedOperationException(
+                    "writing a VLEN of compound is rejected by compoundDatasetCommonIO");
+
+            long wholeTid = -1;
             try {
                 wholeTid = H5.H5Dget_type(did);
-                if (isRead) {
-                    @SuppressWarnings("rawtypes")
-                    ArrayList[] vlBuf = new ArrayList[nSelPoints];
-                    H5.H5DreadVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT, vlBuf);
-                    globalMemberIndex[0]++;
-                    theData = vlBuf;
-                }
-                else {
-                    // writeBuf is the per-member List; this vlen occupies its only slot.
-                    Object vlBuf = ((List<?>)writeBuf).get(0);
-                    H5.H5DwriteVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT,
-                                  (Object[])vlBuf);
-                    globalMemberIndex[0]++;
-                }
+                @SuppressWarnings("rawtypes")
+                ArrayList[] vlBuf = new ArrayList[nSelPoints];
+                H5.H5DreadVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT, vlBuf);
+                globalMemberIndex[0]++;
+                theData = vlBuf;
             }
             catch (HDF5DataFiltersException exfltr) {
-                log.debug("compoundTypeIO(): top-level VLEN {} failure: ", isRead ? "read" : "write", exfltr);
+                log.debug("compoundTypeIO(): top-level VLEN read failure: ", exfltr);
                 throw new HDF5Exception("Filter not available exception: " + exfltr.getMessage());
             }
             catch (Exception ex) {
-                log.debug("compoundTypeIO(): top-level VLEN {} failure: ", isRead ? "read" : "write", ex);
-                throw new HDF5Exception("failed to " + (isRead ? "read" : "write") +
-                                        " VLEN-of-compound dataset: " + ex.getMessage());
+                log.debug("compoundTypeIO(): top-level VLEN read failure: ", ex);
+                throw new HDF5Exception("failed to read VLEN-of-compound dataset: " + ex.getMessage());
             }
             finally {
                 if (wholeTid >= 0) {
