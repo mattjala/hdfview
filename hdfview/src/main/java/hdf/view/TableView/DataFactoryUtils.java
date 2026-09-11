@@ -250,8 +250,8 @@ public class DataFactoryUtils {
                                          curProviderIndex, depth + 1);
             }
             else if (curType.isVLEN() && !curType.isVarStr()) {
-                for (int j = 0; j < arrSize; j++)
-                    outMap.put(curMapIndex[0]++, curProviderIndex[0]);
+                // Exactly one column: a vlen is never CLASS_ARRAY, so arrSize is 1 here.
+                outMap.put(curMapIndex[0]++, curProviderIndex[0]);
             }
             else
                 outMap.put(curMapIndex[0]++, curProviderIndex[0]);
@@ -371,14 +371,13 @@ public class DataFactoryUtils {
                                             curStartIdx, depth + 1);
             }
             else if (curType.isVLEN() && !curType.isVarStr()) {
-                for (int j = 0; j < arrSize; j++) {
-                    if (depth == 0) {
-                        outMap.put(curMapIndex[0], curMapIndex[0]);
-                        curMapIndex[0]++;
-                    }
-                    else
-                        outMap.put(curMapIndex[0]++, curStartIdx[0]);
+                // Exactly one column: a vlen is never CLASS_ARRAY, so arrSize is 1 here.
+                if (depth == 0) {
+                    outMap.put(curMapIndex[0], curMapIndex[0]);
+                    curMapIndex[0]++;
                 }
+                else
+                    outMap.put(curMapIndex[0]++, curStartIdx[0]);
             }
             else {
                 if (depth == 0) {
@@ -391,41 +390,4 @@ public class DataFactoryUtils {
         }
     }
 
-    /**
-     * Return true when the datatype tree contains a construct whose table-view
-     * write path is not symmetric with the (recently expanded) display path,
-     * so a single-cell edit cannot be reliably mapped back to storage.
-     */
-    public static boolean isUnsafeForWrite(Datatype dtype) { return isUnsafe(dtype, false); }
-
-    private static boolean isUnsafe(Datatype dtype, boolean insideCompound)
-    {
-        if (dtype == null)
-            return false;
-
-        if (dtype.isVLEN() && !dtype.isVarStr())
-            return true;
-
-        if (dtype.isArray()) {
-            Datatype base = dtype.getDatatypeBase();
-            if (base != null && (base.isCompound() || base.isArray() || (base.isVLEN() && !base.isVarStr())))
-                return true;
-            return insideCompound;
-        }
-
-        if (dtype.isCompound()) {
-            if (insideCompound)
-                return true;
-            List<Datatype> members = dtype.getCompoundMemberTypes();
-            if (members != null) {
-                for (Datatype m : members) {
-                    if (isUnsafe(m, true))
-                        return true;
-                }
-            }
-            return false;
-        }
-
-        return false;
-    }
 }

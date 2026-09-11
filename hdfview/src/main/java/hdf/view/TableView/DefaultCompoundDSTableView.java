@@ -679,15 +679,6 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
         public void handleLayerEvent(ILayerEvent e)
         {
             if (e instanceof CellSelectionEvent) {
-                // For datatypes where the display column count has been
-                // expanded (array-of-compound, vlen-of-compound, etc.) the
-                // listener below hits a null ptr because baseIndexMap was built from the
-                // unexpanded member count. Editing is already disabled for
-                // these via unsafeForWrite, and the listener's side effects
-                // (ref preview, etc.) don't apply, so just return.
-                if (unsafeForWrite)
-                    return;
-
                 CellSelectionEvent event = (CellSelectionEvent)e;
                 boolean valIsRegRef      = false;
                 boolean valIsObjRef      = false;
@@ -714,6 +705,10 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                 }
                 catch (Exception ex) {
                     log.debug("CompoundDSCellSelectionListener: buildIndexMaps", ex);
+                }
+                if (maps == null) {
+                    log.debug("CompoundDSCellSelectionListener: index maps unavailable");
+                    return;
                 }
                 baseIndexMap         = maps[DataFactoryUtils.COL_TO_BASE_CLASS_MAP_INDEX];
                 relCmpdStartIndexMap = maps[DataFactoryUtils.CMPD_START_IDX_MAP_INDEX];
@@ -754,17 +749,41 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                 log.trace("CompoundDSCellSelectionListener: CellSelected fieldIndex={}:{}", rowIdx,
                           fieldIndex);
 
-                int bIndex      = baseIndexMap.get(fieldIndex - 1);
-                Object colValue = ((List<?>)dataValue).get(bIndex);
-                if (colValue == null)
-                    log.debug("CompoundDSCellSelectionListener: CellSelected colValue is null for Idx={}",
-                              bIndex);
+                /*
+                 * The column index map is built from the compound's member list, while the
+                 * display may cover more columns than there are members (array-of-compound,
+                 * vlen-of-compound). A column outside the map therefore has no single member
+                 * type to inspect. Reference detection is best-effort - skip it in that case
+                 * and still update the cell label and value field below.
+                 */
+                Integer bIndexObj = baseIndexMap.get(fieldIndex - 1);
+                if (bIndexObj == null) {
+                    log.debug("CompoundDSCellSelectionListener: no member mapping for column {}",
+                              fieldIndex - 1);
+                }
+                else if (bIndexObj < 0 || bIndexObj >= selectedMemberTypes.length) {
+                    log.debug("CompoundDSCellSelectionListener: member index {} out of range (max {})",
+                              bIndexObj, selectedMemberTypes.length);
+                }
+                else {
+                    int bIndex = bIndexObj;
 
-                Datatype selectedType = selectedMemberTypes[bIndex];
+                    if (dataValue instanceof List) {
+                        Object colValue = ((List<?>)dataValue).get(bIndex);
+                        if (colValue == null)
+                            log.debug(
+                                "CompoundDSCellSelectionListener: CellSelected colValue is null for Idx={}",
+                                bIndex);
+                    }
 
-                if (selectedType.isRef()) {
-                    valIsRegRef = (selectedType.getDatatypeSize() == HDF5Constants.H5R_DSET_REG_REF_BUF_SIZE);
-                    valIsObjRef = (selectedType.getDatatypeSize() == HDF5Constants.H5R_OBJ_REF_BUF_SIZE);
+                    Datatype selectedType = selectedMemberTypes[bIndex];
+
+                    if (selectedType.isRef()) {
+                        valIsRegRef =
+                            (selectedType.getDatatypeSize() == HDF5Constants.H5R_DSET_REG_REF_BUF_SIZE);
+                        valIsObjRef =
+                            (selectedType.getDatatypeSize() == HDF5Constants.H5R_OBJ_REF_BUF_SIZE);
+                    }
                 }
 
                 int rowStart  = ((RowHeaderDataProvider)rowHeaderDataProvider).start;

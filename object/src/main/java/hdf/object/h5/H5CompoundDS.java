@@ -951,32 +951,41 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
              * shape VlenDataProvider/VlenDataDisplayConverter render. The dataset enumerates
              * a single member (see H5Datatype.extractCompoundInfo), so we return one column.
              */
-            if (ioType == H5File.IO_TYPE.READ) {
-                long wholeTid = -1;
-                try {
-                    wholeTid = H5.H5Dget_type(did);
-                    @SuppressWarnings("rawtypes")
-                    ArrayList[] vlBuf = new ArrayList[nSelPoints];
-                    H5.H5DreadVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT, vlBuf);
-                    globalMemberIndex[0]++;
-                    theData = vlBuf;
-                }
-                catch (HDF5DataFiltersException exfltr) {
-                    log.debug("compoundTypeIO(): top-level VLEN read failure: ", exfltr);
-                    throw new HDF5Exception("Filter not available exception: " + exfltr.getMessage());
-                }
-                catch (Exception ex) {
-                    log.debug("compoundTypeIO(): top-level VLEN read failure: ", ex);
-                    throw new HDF5Exception("failed to read VLEN-of-compound dataset: " + ex.getMessage());
-                }
-                finally {
-                    if (wholeTid >= 0) {
-                        try {
-                            H5.H5Tclose(wholeTid);
-                        }
-                        catch (Exception ex) {
-                            log.debug("compoundTypeIO(): H5Tclose(wholeTid {}) failure: ", wholeTid, ex);
-                        }
+            if (ioType != H5File.IO_TYPE.READ) {
+                /*
+                 * There is no symmetric write path for this shape: the read above returns the
+                 * whole sequence as one column, while the per-member write path expects one
+                 * column per inner member. Fail loudly rather than silently discarding the
+                 * user's edit.
+                 */
+                throw new UnsupportedOperationException(
+                    "writing a top-level VLEN-of-compound dataset is not supported");
+            }
+
+            long wholeTid = -1;
+            try {
+                wholeTid = H5.H5Dget_type(did);
+                @SuppressWarnings("rawtypes")
+                ArrayList[] vlBuf = new ArrayList[nSelPoints];
+                H5.H5DreadVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT, vlBuf);
+                globalMemberIndex[0]++;
+                theData = vlBuf;
+            }
+            catch (HDF5DataFiltersException exfltr) {
+                log.debug("compoundTypeIO(): top-level VLEN read failure: ", exfltr);
+                throw new HDF5Exception("Filter not available exception: " + exfltr.getMessage());
+            }
+            catch (Exception ex) {
+                log.debug("compoundTypeIO(): top-level VLEN read failure: ", ex);
+                throw new HDF5Exception("failed to read VLEN-of-compound dataset: " + ex.getMessage());
+            }
+            finally {
+                if (wholeTid >= 0) {
+                    try {
+                        H5.H5Tclose(wholeTid);
+                    }
+                    catch (Exception ex) {
+                        log.debug("compoundTypeIO(): H5Tclose(wholeTid {}) failure: ", wholeTid, ex);
                     }
                 }
             }
