@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -506,8 +505,19 @@ public class TestNestedDatatypeShapes {
     @DisplayName("Writing a VLEN of compound is refused")
     public void testVlenOfCompoundWriteRefused() throws Exception
     {
+        /*
+         * Built and closed here rather than copied from the shared fixture, which stays
+         * open for the whole class: Windows will not copy a file another handle holds.
+         */
         Path target = workDir.resolve("refused.h5");
-        Files.copy(Path.of(testFile.getFilePath()), target, StandardCopyOption.REPLACE_EXISTING);
+        long fid    = H5.H5Fcreate(target.toString(), HDF5Constants.H5F_ACC_TRUNC,
+                                   HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
+        try {
+            writeVlenOfCompound(fid);
+        }
+        finally {
+            H5.H5Fclose(fid);
+        }
 
         H5File rw = (H5File)(new H5File()).createInstance(target.toString(), FileFormat.WRITE);
         rw.open();
