@@ -510,8 +510,8 @@ public class TestNestedDatatypeShapes {
          * open for the whole class: Windows will not copy a file another handle holds.
          */
         Path target = workDir.resolve("refused.h5");
-        long fid    = H5.H5Fcreate(target.toString(), HDF5Constants.H5F_ACC_TRUNC,
-                                   HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
+        long fid    = H5.H5Fcreate(target.toString(), HDF5Constants.H5F_ACC_TRUNC, HDF5Constants.H5P_DEFAULT,
+                                   HDF5Constants.H5P_DEFAULT);
         try {
             writeVlenOfCompound(fid);
         }
