@@ -1975,6 +1975,37 @@ public class H5Datatype extends Datatype {
     }
 
     /**
+     * Returns true when this datatype contains a variable-length sequence or
+     * variable-length string at any depth. Mirrors h5str_detect_vlen() in the JNI,
+     * which decides there whether an I/O call uses the variable-length object model.
+     *
+     * @param dtype the datatype to inspect
+     *
+     * @return true if the type contains variable-length data
+     */
+    public static boolean containsVlenData(final Datatype dtype)
+    {
+        if (dtype == null)
+            return false;
+
+        if (dtype.isVarStr() || dtype.getDatatypeClass() == CLASS_VLEN)
+            return true;
+
+        if (dtype.isCompound()) {
+            List<Datatype> members = dtype.getCompoundMemberTypes();
+            if (members != null) {
+                for (Datatype member : members) {
+                    if (containsVlenData(member))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        return containsVlenData(dtype.getDatatypeBase());
+    }
+
+    /**
      * Allocates a one-dimensional array of byte, short, int, long, float, double, or String to store data in
      * memory.
      *
@@ -2166,31 +2197,42 @@ public class H5Datatype extends Datatype {
         else if (dtype.isVLEN()) {
             log.trace("allocateArray(): isVLEN");
 
-            // Slots are left null: the JNI read routines (H5DreadVL/H5AreadVL)
-            // install a freshly allocated ArrayList into each slot. Callers must
-            // not pre-allocate the per-element lists.
+            // Slots are left null; the read routines allocate each list.
             data = new ArrayList[numPoints];
         }
         else if (typeClass == CLASS_ARRAY) {
             log.trace("allocateArray(): class CLASS_ARRAY");
 
-            try {
-                log.trace("allocateArray(): ArrayRank={}", dtype.getArrayDims().length);
-
-                // Use the base datatype to define the array
-                long[] arrayDims = dtype.getArrayDims();
-                int asize        = numPoints;
-                for (int j = 0; j < arrayDims.length; j++) {
-                    log.trace("allocateArray(): Array dims[{}]={}", j, arrayDims[j]);
-
-                    asize *= arrayDims[j];
-                }
-
-                if (baseType != null)
-                    data = H5Datatype.allocateArray(baseType, asize);
+            /*
+             * Per the JNI buffer data model (see "Buffer data model" in H5.java), an
+             * array containing variable-length data is read as one slot per selected
+             * point, each holding an ArrayList of the array's elements. The read
+             * routines allocate those lists, so the slots are left null, and the
+             * container must be Object[] rather than a narrowly-typed array.
+             */
+            if (containsVlenData(dtype)) {
+                log.trace("allocateArray(): CLASS_ARRAY contains variable-length data");
+                data = new Object[numPoints];
             }
-            catch (Exception ex) {
-                log.debug("allocateArray(): CLASS_ARRAY class failure: ", ex);
+            else {
+                try {
+                    log.trace("allocateArray(): ArrayRank={}", dtype.getArrayDims().length);
+
+                    // Use the base datatype to define the array
+                    long[] arrayDims = dtype.getArrayDims();
+                    int asize        = numPoints;
+                    for (int j = 0; j < arrayDims.length; j++) {
+                        log.trace("allocateArray(): Array dims[{}]={}", j, arrayDims[j]);
+
+                        asize *= arrayDims[j];
+                    }
+
+                    if (baseType != null)
+                        data = H5Datatype.allocateArray(baseType, asize);
+                }
+                catch (Exception ex) {
+                    log.debug("allocateArray(): CLASS_ARRAY class failure: ", ex);
+                }
             }
         }
         else if (typeClass == CLASS_COMPLEX) {

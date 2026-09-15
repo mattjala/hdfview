@@ -929,6 +929,7 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
      */
     private Object compoundTypeIO(H5File.IO_TYPE ioType, long did, long[] spaceIDs, int nSelPoints,
                                   final H5Datatype cmpdType, Object writeBuf, int[] globalMemberIndex)
+        throws Exception
     {
         Object theData = null;
 
@@ -944,39 +945,38 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
         }
         else if (cmpdType.isVLEN() && !cmpdType.isVarStr()) {
             /*
-             * Top-level VLEN-of-compound is displayed as a SINGLE column showing the whole
-             * sequence (e.g. [{1, 2}, {3, 4}]), consistent with how a vlen member of a
-             * compound is shown. Read the whole vlen in one H5DreadVL call; the JNI parses
-             * each compound element into nested Lists (e.g. [[1, 2], [3, 4]]), exactly the
-             * shape VlenDataProvider/VlenDataDisplayConverter render. The dataset enumerates
-             * a single member (see H5Datatype.extractCompoundInfo), so we return one column.
+             * A top-level VLEN-of-compound is one column holding the whole sequence, so
+             * transfer it in a single call; the JNI parses each compound element into a
+             * nested List. The dataset enumerates a single member, hence one column.
              */
-            if (ioType == H5File.IO_TYPE.READ) {
-                long wholeTid = -1;
-                try {
-                    wholeTid = H5.H5Dget_type(did);
-                    @SuppressWarnings("rawtypes")
-                    ArrayList[] vlBuf = new ArrayList[nSelPoints];
-                    H5.H5DreadVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT, vlBuf);
-                    globalMemberIndex[0]++;
-                    theData = vlBuf;
-                }
-                catch (HDF5DataFiltersException exfltr) {
-                    log.debug("compoundTypeIO(): top-level VLEN read failure: ", exfltr);
-                    throw new HDF5Exception("Filter not available exception: " + exfltr.getMessage());
-                }
-                catch (Exception ex) {
-                    log.debug("compoundTypeIO(): top-level VLEN read failure: ", ex);
-                    throw new HDF5Exception("failed to read VLEN-of-compound dataset: " + ex.getMessage());
-                }
-                finally {
-                    if (wholeTid >= 0) {
-                        try {
-                            H5.H5Tclose(wholeTid);
-                        }
-                        catch (Exception ex) {
-                            log.debug("compoundTypeIO(): H5Tclose(wholeTid {}) failure: ", wholeTid, ex);
-                        }
+            if (ioType != H5File.IO_TYPE.READ)
+                throw new UnsupportedOperationException(
+                    "writing a VLEN of compound is rejected by compoundDatasetCommonIO");
+
+            long wholeTid = -1;
+            try {
+                wholeTid = H5.H5Dget_type(did);
+                @SuppressWarnings("rawtypes")
+                ArrayList[] vlBuf = new ArrayList[nSelPoints];
+                H5.H5DreadVL(did, wholeTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT, vlBuf);
+                globalMemberIndex[0]++;
+                theData = vlBuf;
+            }
+            catch (HDF5DataFiltersException exfltr) {
+                log.debug("compoundTypeIO(): top-level VLEN read failure: ", exfltr);
+                throw new HDF5Exception("Filter not available exception: " + exfltr.getMessage());
+            }
+            catch (Exception ex) {
+                log.debug("compoundTypeIO(): top-level VLEN read failure: ", ex);
+                throw new HDF5Exception("failed to read VLEN-of-compound dataset: " + ex.getMessage());
+            }
+            finally {
+                if (wholeTid >= 0) {
+                    try {
+                        H5.H5Tclose(wholeTid);
+                    }
+                    catch (Exception ex) {
+                        log.debug("compoundTypeIO(): H5Tclose(wholeTid {}) failure: ", wholeTid, ex);
                     }
                 }
             }
@@ -1174,6 +1174,10 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
                         catch (Exception ex) {
                             log.debug("compoundTypeIO(): failed to write member[{}]: ", i, ex);
                             globalMemberIndex[0]++;
+                            // The member was not persisted; do not report success.
+                            throw new Exception("failed to write compound member '" + memberName +
+                                                    "': " + ex.getMessage(),
+                                                ex);
                         }
                     }
                 } //  (i = 0, writeListIndex = 0; i < atomicTypeList.size(); i++)
@@ -1181,6 +1185,10 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
             catch (Exception ex) {
                 log.debug("compoundTypeIO(): failure: ", ex);
                 memberDataList = null;
+                // A failed write leaves data unpersisted and must be reported; a
+                // failed read yields a null compound.
+                if (ioType == H5File.IO_TYPE.WRITE)
+                    throw ex;
             }
 
             theData = memberDataList;
@@ -1241,8 +1249,7 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
                         (spaceIDs[0] == HDF5Constants.H5P_DEFAULT) ? "H5P_DEFAULT" : spaceIDs[0],
                         (spaceIDs[1] == HDF5Constants.H5P_DEFAULT) ? "H5P_DEFAULT" : spaceIDs[1]);
 
-                    // Slots are left null: H5DreadVL installs a freshly
-                    // allocated ArrayList into each slot.
+                    // Slots are left null; H5DreadVL allocates each list.
                     @SuppressWarnings("rawtypes")
                     ArrayList[] vlBuf = new ArrayList[nSelPoints];
 
@@ -1279,8 +1286,7 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
                     H5.H5Dread_VLStrings(dsetID, compTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT,
                                          (Object[])memberData);
                 }
-                else if (memberType.isVLEN() ||
-                         (memberType.isArray() && memberType.getDatatypeBase().isVLEN())) {
+                else if (H5Datatype.containsVlenData(memberType)) {
                     log.trace(
                         "readSingleCompoundMember(): H5DreadVL did={} compTid={} spaceIDs[0]={} spaceIDs[1]={}",
                         dsetID, compTid,
@@ -1290,15 +1296,15 @@ public class H5CompoundDS extends CompoundDS implements MetaDataContainer {
                     H5.H5DreadVL(dsetID, compTid, spaceIDs[0], spaceIDs[1], HDF5Constants.H5P_DEFAULT,
                                  (Object[])memberData);
 
-                    // H5DreadVL was called with a single-field compound transfer type, so
-                    // each row comes back wrapped in a one-element record. Unwrap to expose
-                    // the payload directly.
-                    if (memberType.isVLEN()) {
-                        Object[] rows = (Object[])memberData;
-                        for (int r = 0; r < rows.length; r++) {
-                            if (rows[r] instanceof java.util.ArrayList<?> rec && rec.size() == 1)
-                                rows[r] = rec.get(0);
-                        }
+                    /*
+                     * The single-field compound transfer type wraps each row in a
+                     * one-element record holding the member's value; unwrap it.
+                     */
+                    Object[] rows = (Object[])memberData;
+                    for (int r = 0; r < rows.length; r++) {
+                        if (rows[r] instanceof java.util.ArrayList<?> rec && rec.size() == 1 &&
+                            rec.get(0) instanceof java.util.List<?>)
+                            rows[r] = rec.get(0);
                     }
                 }
                 else {

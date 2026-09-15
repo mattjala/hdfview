@@ -48,13 +48,9 @@ public class DataFactoryUtils {
     public static final int CMPD_START_IDX_MAP_INDEX = 1;
 
     /**
-     * Number of flat leaf names a Datatype contributes to the flat-name list
-     * produced by H5Datatype.extractCompoundInfo. The rules:
-     *   compound        - sum of children's counts (no header entry)
-     *   array(compound) - 1 header + sum of inner compound's children's counts
-     *   array(atomic)   - 1
-     *   vlen(any)       - 1 (header only; vlen recursion is disabled)
-     *   atomic, varstr  - 1
+     * Number of flat leaf names a Datatype contributes to the list produced by
+     * H5Datatype.extractCompoundInfo: a compound sums its children, an
+     * array-of-compound adds a header entry, anything else counts once.
      */
     public static int countLeafNames(Datatype t)
     {
@@ -100,12 +96,8 @@ public class DataFactoryUtils {
     }
 
     /**
-     * Variant of {@link #filterNonSelectedMembers(CompoundDataFormat, Datatype)} that
-     * skips the selected-member filter for inner (non-top-level) compounds.
-     *
-     * The dataset's flat selected-member list only enumerates top-level leaves; inner
-     * compound members can't be individually deselected. Filtering an inner compound
-     * against that list would spuriously remove every non-compound member.
+     * As above, but an inner compound keeps every member: the dataset's selected-member
+     * list enumerates only top-level leaves, so filtering against it would drop them all.
      */
     public static List<Datatype> filterNonSelectedMembers(CompoundDataFormat dataFormat,
                                                           final Datatype compoundType, boolean isTopLevel)
@@ -224,19 +216,14 @@ public class DataFactoryUtils {
                 }
                 log.trace("buildColIdxToStartIdxMap(): arrSize after base={}", arrSize);
             }
-            // A vlen member is always a single column rendered by VlenDataProvider as the
-            // whole sequence (a brace-string, recursing for nested compounds). A top-level
-            // vlen-of-compound is already peeled to its inner compound at the dataset level,
-            // so any vlen reaching here is a member - never expanded into per-element columns.
 
             if (nestedCompoundType != null) {
                 List<Datatype> cmpdSelectedTypes =
                     filterNonSelectedMembers(dataFormat, nestedCompoundType, false);
 
                 /*
-                 * For Array of Compound types, we repeat the compound members n times,
-                 * where n is the number of array elements. For a top-level
-                 * vlen-of-compound, arrSize is 1 (one column per inner member).
+                 * For Array of Compound types, repeat the compound members once per
+                 * array element.
                  */
                 for (int j = 0; j < arrSize; j++) {
                     buildColIdxToProviderMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex,
@@ -246,12 +233,12 @@ public class DataFactoryUtils {
             else if (curType.isCompound()) {
                 List<Datatype> cmpdSelectedTypes = filterNonSelectedMembers(dataFormat, curType, false);
 
-                buildColIdxToProviderMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex,
-                                         curProviderIndex, depth + 1);
+                buildColIdxToProviderMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex, curProviderIndex,
+                                         depth + 1);
             }
             else if (curType.isVLEN() && !curType.isVarStr()) {
-                for (int j = 0; j < arrSize; j++)
-                    outMap.put(curMapIndex[0]++, curProviderIndex[0]);
+                // A vlen is one column: it holds the whole sequence.
+                outMap.put(curMapIndex[0]++, curProviderIndex[0]);
             }
             else
                 outMap.put(curMapIndex[0]++, curProviderIndex[0]);
@@ -341,8 +328,6 @@ public class DataFactoryUtils {
                 }
                 log.trace("buildRelColIdxToStartIdxMap(): arrSize after base={}", arrSize);
             }
-            // Single column per vlen member (see buildColIdxToProviderMap). No per-element
-            // expansion; top-level vlen-of-compound is already peeled at the dataset level.
 
             if (nestedCompoundType != null) {
                 List<Datatype> cmpdSelectedTypes =
@@ -367,18 +352,17 @@ public class DataFactoryUtils {
 
                 List<Datatype> cmpdSelectedTypes = filterNonSelectedMembers(dataFormat, curType, false);
 
-                buildRelColIdxToStartIdxMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex,
-                                            curStartIdx, depth + 1);
+                buildRelColIdxToStartIdxMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex, curStartIdx,
+                                            depth + 1);
             }
             else if (curType.isVLEN() && !curType.isVarStr()) {
-                for (int j = 0; j < arrSize; j++) {
-                    if (depth == 0) {
-                        outMap.put(curMapIndex[0], curMapIndex[0]);
-                        curMapIndex[0]++;
-                    }
-                    else
-                        outMap.put(curMapIndex[0]++, curStartIdx[0]);
+                // A vlen is one column: it holds the whole sequence.
+                if (depth == 0) {
+                    outMap.put(curMapIndex[0], curMapIndex[0]);
+                    curMapIndex[0]++;
                 }
+                else
+                    outMap.put(curMapIndex[0]++, curStartIdx[0]);
             }
             else {
                 if (depth == 0) {
@@ -389,43 +373,5 @@ public class DataFactoryUtils {
                     outMap.put(curMapIndex[0]++, curStartIdx[0]);
             }
         }
-    }
-
-    /**
-     * Return true when the datatype tree contains a construct whose table-view
-     * write path is not symmetric with the (recently expanded) display path,
-     * so a single-cell edit cannot be reliably mapped back to storage.
-     */
-    public static boolean isUnsafeForWrite(Datatype dtype) { return isUnsafe(dtype, false); }
-
-    private static boolean isUnsafe(Datatype dtype, boolean insideCompound)
-    {
-        if (dtype == null)
-            return false;
-
-        if (dtype.isVLEN() && !dtype.isVarStr())
-            return true;
-
-        if (dtype.isArray()) {
-            Datatype base = dtype.getDatatypeBase();
-            if (base != null && (base.isCompound() || base.isArray() || (base.isVLEN() && !base.isVarStr())))
-                return true;
-            return insideCompound;
-        }
-
-        if (dtype.isCompound()) {
-            if (insideCompound)
-                return true;
-            List<Datatype> members = dtype.getCompoundMemberTypes();
-            if (members != null) {
-                for (Datatype m : members) {
-                    if (isUnsafe(m, true))
-                        return true;
-                }
-            }
-            return false;
-        }
-
-        return false;
     }
 }

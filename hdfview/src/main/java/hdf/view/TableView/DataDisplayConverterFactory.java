@@ -73,8 +73,6 @@ public class DataDisplayConverterFactory {
 
         dataFormatReference = dataObject;
 
-        // A top-level vlen-of-compound is a single column; dispatch on the dataset's own
-        // datatype so getDataDisplayConverter(VLEN) makes a VlenDataDisplayConverter.
         HDFDisplayConverter converter = getDataDisplayConverter(dataObject.getDatatype());
 
         return converter;
@@ -326,13 +324,12 @@ public class DataDisplayConverterFactory {
                         if (curObject instanceof List)
                             buffer.append(memberTypeConverters[i].canonicalToDisplayValue(curObject));
                         else if (curObject != null && curObject.getClass().isArray()) {
-                            // Array-of-compound: the member is a column-array indexed by row.
+                            // Array-of-compound: the member is indexed by row.
                             Object dataArrayValue = Array.get(curObject, cellRowIdx);
                             buffer.append(memberTypeConverters[i].canonicalToDisplayValue(dataArrayValue));
                         }
                         else {
-                            // A single compound element (e.g. one element of a vlen-of-compound):
-                            // the member is already a scalar value, not a per-row column.
+                            // A single compound element: the member is already the value.
                             buffer.append(memberTypeConverters[i].canonicalToDisplayValue(curObject));
                         }
                     }
@@ -469,7 +466,9 @@ public class DataDisplayConverterFactory {
             try {
                 Object obj;
                 Object convertedValue;
-                int arrLen = Array.getLength(value);
+
+                // An array's elements may arrive as a List, nested arrays included.
+                int arrLen = (value instanceof List) ? ((List<?>)value).size() : Array.getLength(value);
 
                 log.trace("canonicalToDisplayValue({}): array length={}", value, arrLen);
 
@@ -480,7 +479,7 @@ public class DataDisplayConverterFactory {
                     if (i > 0)
                         buffer.append(", ");
 
-                    obj = Array.get(value, i);
+                    obj = (value instanceof List) ? ((List<?>)value).get(i) : Array.get(value, i);
 
                     convertedValue = baseTypeConverter.canonicalToDisplayValue(obj);
 
@@ -611,7 +610,7 @@ public class DataDisplayConverterFactory {
                 Object obj;
                 Object convertedValue;
 
-                // Column-expanded vlen cells hand us a single scalar; defer to base converter.
+                // A scalar cell defers to the base converter.
                 if (!value.getClass().isArray() && !(value instanceof List)) {
                     buffer.append(baseTypeConverter.canonicalToDisplayValue(value));
                     return buffer;
