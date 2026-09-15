@@ -233,8 +233,8 @@ public class DataFactoryUtils {
             else if (curType.isCompound()) {
                 List<Datatype> cmpdSelectedTypes = filterNonSelectedMembers(dataFormat, curType, false);
 
-                buildColIdxToProviderMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex,
-                                         curProviderIndex, depth + 1);
+                buildColIdxToProviderMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex, curProviderIndex,
+                                         depth + 1);
             }
             else if (curType.isVLEN() && !curType.isVarStr()) {
                 // A vlen is one column: it holds the whole sequence.
@@ -352,8 +352,8 @@ public class DataFactoryUtils {
 
                 List<Datatype> cmpdSelectedTypes = filterNonSelectedMembers(dataFormat, curType, false);
 
-                buildRelColIdxToStartIdxMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex,
-                                            curStartIdx, depth + 1);
+                buildRelColIdxToStartIdxMap(outMap, dataFormat, cmpdSelectedTypes, curMapIndex, curStartIdx,
+                                            depth + 1);
             }
             else if (curType.isVLEN() && !curType.isVarStr()) {
                 // A vlen is one column: it holds the whole sequence.
@@ -374,5 +374,4 @@ public class DataFactoryUtils {
             }
         }
     }
-
 }

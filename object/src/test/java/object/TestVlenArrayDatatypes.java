@@ -9,12 +9,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
-import hdf.hdf5lib.H5;
 import hdf.object.Dataset;
 import hdf.object.Datatype;
 import hdf.object.FileFormat;
 import hdf.object.HObject;
 import hdf.object.h5.H5File;
+
+import hdf.hdf5lib.H5;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -224,12 +225,13 @@ public class TestVlenArrayDatatypes {
                 "tarray4.h5, /Dataset1", "tcompound_complex.h5, /CompoundComplex",
                 "tcompound_complex2.h5, /CompoundComplex1D", "tstr.h5, /comp1"})
     @DisplayName("Nested datatype read")
-    public void testNestedDatatypeRead(String filename, String datasetPath) throws Exception
+    public void
+    testNestedDatatypeRead(String filename, String datasetPath) throws Exception
     {
         Dataset dataset = getDataset(filename, datasetPath);
 
-        Object data = assertDoesNotThrow(() -> dataset.getData(),
-                                         "Reading " + filename + datasetPath + " threw");
+        Object data =
+            assertDoesNotThrow(() -> dataset.getData(), "Reading " + filename + datasetPath + " threw");
         assertNotNull(data, "Data read returned null for " + filename + datasetPath);
     }
 
@@ -269,7 +271,7 @@ public class TestVlenArrayDatatypes {
         Dataset reopened = (Dataset)testFile.get("/ScalarArrayOfVlenStr");
         reopened.init();
 
-        Object[] points = (Object[])reopened.getData();
+        Object[] points    = (Object[])reopened.getData();
         List<?> firstPoint = (List<?>)points[0];
 
         assertEquals(EXPECTED_VLEN_STRINGS[0], firstPoint.get(0), "Untouched element changed");

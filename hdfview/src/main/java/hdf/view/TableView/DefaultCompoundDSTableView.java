@@ -753,10 +753,10 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                           fieldIndex);
 
                 /*
-                  * The display may cover more columns than the compound has members, so a
-                  * column can fall outside the map. Reference detection is best-effort;
-                  * the label and value field below are updated either way.
-                  */
+                 * The display may cover more columns than the compound has members, so a
+                 * column can fall outside the map. Reference detection is best-effort;
+                 * the label and value field below are updated either way.
+                 */
                 Integer bIndexObj = baseIndexMap.get(fieldIndex - 1);
                 if (bIndexObj == null) {
                     log.debug("CompoundDSCellSelectionListener: no member mapping for column {}",
@@ -782,8 +782,7 @@ public class DefaultCompoundDSTableView extends DefaultBaseTableView implements 
                     if (selectedType.isRef()) {
                         valIsRegRef =
                             (selectedType.getDatatypeSize() == HDF5Constants.H5R_DSET_REG_REF_BUF_SIZE);
-                        valIsObjRef =
-                            (selectedType.getDatatypeSize() == HDF5Constants.H5R_OBJ_REF_BUF_SIZE);
+                        valIsObjRef = (selectedType.getDatatypeSize() == HDF5Constants.H5R_OBJ_REF_BUF_SIZE);
                     }
                 }
 

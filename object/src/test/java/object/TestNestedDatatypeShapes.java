@@ -8,11 +8,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
-import hdf.hdf5lib.H5;
-import hdf.hdf5lib.HDF5Constants;
 import hdf.object.Dataset;
 import hdf.object.FileFormat;
 import hdf.object.h5.H5File;
+
+import hdf.hdf5lib.H5;
+import hdf.hdf5lib.HDF5Constants;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -98,8 +99,8 @@ public class TestNestedDatatypeShapes {
         return tid;
     }
 
-    private static void writeDataset(long fid, String name, long tid, int nPoints, Object buf,
-                                     boolean vlen) throws Exception
+    private static void writeDataset(long fid, String name, long tid, int nPoints, Object buf, boolean vlen)
+        throws Exception
     {
         long sid = H5.H5Screate_simple(1, new long[] {nPoints}, null);
         long did = H5.H5Dcreate(fid, name, tid, sid, HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT,
@@ -109,8 +110,8 @@ public class TestNestedDatatypeShapes {
                 H5.H5DwriteVL(did, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL,
                               HDF5Constants.H5P_DEFAULT, (Object[])buf);
             else
-                H5.H5Dwrite(did, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL,
-                            HDF5Constants.H5P_DEFAULT, buf);
+                H5.H5Dwrite(did, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT,
+                            buf);
         }
         finally {
             H5.H5Dclose(did);
@@ -209,9 +210,9 @@ public class TestNestedDatatypeShapes {
     /** ARRAY[2] of COMPOUND{n:int, s:varstr}. */
     private static void writeArrayOfCompoundVarStr(long fid) throws Exception
     {
-        long vs   = varStrType();
+        long vs    = varStrType();
         long strSz = H5.H5Tget_size(vs);
-        long cmpd = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, 8 + strSz);
+        long cmpd  = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, 8 + strSz);
         H5.H5Tinsert(cmpd, "n", 0, HDF5Constants.H5T_NATIVE_INT);
         H5.H5Tinsert(cmpd, "s", 8, vs);
         long tid = H5.H5Tarray_create(cmpd, 1, new long[] {2});
@@ -268,11 +269,10 @@ public class TestNestedDatatypeShapes {
         H5.H5Tset_size(st, 8);
         long tid = H5.H5Tarray_create(st, 1, new long[] {3});
         try {
-            byte[] buf = new byte[2 * 3 * 8];
+            byte[] buf      = new byte[2 * 3 * 8];
             String[] values = {"alpha", "beta", "gamma", "delta", "epsilon", "zeta"};
             for (int i = 0; i < values.length; i++)
-                System.arraycopy(values[i].getBytes("US-ASCII"), 0, buf, i * 8,
-                                 values[i].length());
+                System.arraycopy(values[i].getBytes("US-ASCII"), 0, buf, i * 8, values[i].length());
             writeDataset(fid, "array_of_fixed_string", tid, 2, buf, false);
         }
         finally {
@@ -305,8 +305,8 @@ public class TestNestedDatatypeShapes {
     /** COMPOUND mixing a VLEN of compound, a variable-length string and an object reference. */
     private static void writeCompoundWithReference(long fid) throws Exception
     {
-        long gid = H5.H5Gcreate(fid, "referenced_group", HDF5Constants.H5P_DEFAULT,
-                                HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
+        long gid = H5.H5Gcreate(fid, "referenced_group", HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT,
+                                HDF5Constants.H5P_DEFAULT);
         H5.H5Gclose(gid);
         byte[] ref = H5.H5Rcreate_object(fid, "referenced_group", HDF5Constants.H5P_DEFAULT);
 
@@ -364,7 +364,7 @@ public class TestNestedDatatypeShapes {
             return sb.append("]").toString();
         }
         if (data.getClass().isArray()) {
-            int n = java.lang.reflect.Array.getLength(data);
+            int n            = java.lang.reflect.Array.getLength(data);
             StringBuilder sb = new StringBuilder("[");
             for (int i = 0; i < n; i++) {
                 if (i > 0)
@@ -422,8 +422,7 @@ public class TestNestedDatatypeShapes {
     public void testArrayOfCompoundVarStr() throws Exception
     {
         // An array of compound is presented per member, not per element.
-        assertEquals("[[0, 1, 2, 3], [x0, x1, y0, y1]]",
-                     render(open("array_of_compound_varstr").getData()));
+        assertEquals("[[0, 1, 2, 3], [x0, x1, y0, y1]]", render(open("array_of_compound_varstr").getData()));
     }
 
     @Test
@@ -515,8 +514,8 @@ public class TestNestedDatatypeShapes {
              * There is no way to map an edited cell of this shape back to storage, so the
              * write must fail rather than report success having stored nothing.
              */
-            assertThrows(Exception.class, () -> dataset.write(data),
-                         "Writing a VLEN of compound should be refused");
+            assertThrows(Exception.class,
+                         () -> dataset.write(data), "Writing a VLEN of compound should be refused");
         }
         finally {
             rw.close();

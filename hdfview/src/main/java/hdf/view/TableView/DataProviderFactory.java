@@ -74,8 +74,7 @@ public class DataProviderFactory {
 
         dataFormatReference = dataObject;
 
-        HDFDataProvider dataProvider =
-            getDataProvider(dataObject.getDatatype(), dataBuf, dataTransposed);
+        HDFDataProvider dataProvider = getDataProvider(dataObject.getDatatype(), dataBuf, dataTransposed);
 
         return dataProvider;
     }
