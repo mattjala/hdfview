@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Read tests for nested datatype shapes not covered by the shared UI test files.
@@ -35,8 +34,12 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("Nested Datatype Shape Read Tests")
 public class TestNestedDatatypeShapes {
 
-    @TempDir
-    static Path tempDir;
+    /*
+     * Written under target/ rather than a JUnit temporary directory: HDF5 can still
+     * hold a file open when the temporary directory is torn down, which Windows
+     * refuses to delete and JUnit then reports as a failure.
+     */
+    private static Path workDir;
 
     private static final int WIDE_POINTS   = 50;
     private static final int WIDE_ELEMENTS = 230;
@@ -49,7 +52,10 @@ public class TestNestedDatatypeShapes {
     {
         openIDsAtStart = H5.getOpenIDCount();
 
-        String path = tempDir.resolve("nested_shapes.h5").toString();
+        workDir = Path.of("target", "nested-datatype-shapes");
+        Files.createDirectories(workDir);
+
+        String path = workDir.resolve("nested_shapes.h5").toString();
         long fid    = H5.H5Fcreate(path, HDF5Constants.H5F_ACC_TRUNC, HDF5Constants.H5P_DEFAULT,
                                    HDF5Constants.H5P_DEFAULT);
         try {
@@ -498,9 +504,9 @@ public class TestNestedDatatypeShapes {
 
     @Test
     @DisplayName("Writing a VLEN of compound is refused")
-    public void testVlenOfCompoundWriteRefused(@TempDir Path writeDir) throws Exception
+    public void testVlenOfCompoundWriteRefused() throws Exception
     {
-        Path target = writeDir.resolve("refused.h5");
+        Path target = workDir.resolve("refused.h5");
         Files.copy(Path.of(testFile.getFilePath()), target, StandardCopyOption.REPLACE_EXISTING);
 
         H5File rw = (H5File)(new H5File()).createInstance(target.toString(), FileFormat.WRITE);

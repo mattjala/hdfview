@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -237,12 +236,20 @@ public class TestVlenArrayDatatypes {
 
     @Test
     @DisplayName("Array of variable-length string write")
-    public void testArrayOfVlenStringWriteRoundTrip(@TempDir Path tempDir) throws Exception
+    public void testArrayOfVlenStringWriteRoundTrip() throws Exception
     {
         Path source = new File(TEST_DIR + "tvlenstr_array.h5").toPath();
         assertTrue(Files.exists(source), "Test file not found: " + source);
 
-        Path target = tempDir.resolve("tvlenstr_array_rw.h5");
+        /*
+         * Written under target/ rather than a JUnit temporary directory: HDF5 can still
+         * hold a file open when the temporary directory is torn down, which Windows
+         * refuses to delete and JUnit then reports as a failure.
+         */
+        Path workDir = Path.of("target", "vlen-array-datatypes");
+        Files.createDirectories(workDir);
+
+        Path target = workDir.resolve("tvlenstr_array_rw.h5");
         Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
 
         final String replacement = "A replacement variable-length string.";
