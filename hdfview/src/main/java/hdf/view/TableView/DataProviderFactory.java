@@ -1391,7 +1391,7 @@ public class DataProviderFactory {
 
             @SuppressWarnings("unchecked")
             List<Object> target = (List<Object>)elements;
-            int count = (int)Math.min(arraySize, target.size());
+            int count           = (int)Math.min(arraySize, target.size());
             for (int i = 0; i < count; i++) {
                 String token = st.nextToken().trim();
                 if (!token.equals(target.get(i))) {
