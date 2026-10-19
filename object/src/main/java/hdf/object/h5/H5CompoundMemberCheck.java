@@ -28,13 +28,17 @@ import org.slf4j.LoggerFactory;
  * Since 1.14, when a compound holds a variable-length string member whose stored value is
  * NULL, the HDF5 library leaves that member out of the list it returns rather than recording
  * it as null. The list comes back an entry short and every member after the missing one sits
- * a place too early. An array of strings holding a NULL element loses it the same way.
+ * a place too early.
  *
  * The values cannot be recovered on HDFView's side. A compound holding two or more
  * variable-length string members gives no way to tell which one was dropped, so every value
  * of an affected record is replaced with an error marker to prevent showing potentially
  * incorrect data. Refilling the record to the length the datatype asks for also puts right
  * the member count that the table uses for indexing.
+ *
+ * An array loses a NULL element the same way, but its elements carry no names to attach to
+ * the wrong value and a short array throws nothing, so the elements that did come back are
+ * left to display.
  *
  * See HDFGroup/hdfview#503.
  */
@@ -116,20 +120,8 @@ class H5CompoundMemberCheck {
                 }
             }
         }
-        else if (typeClass == HDF5Constants.H5T_ARRAY) {
-            int nelements = elementCount(tid);
-
-            if (values.size() != nelements) {
-                log.debug("walk(): an array of {} elements came back with {} values", nelements,
-                          values.size());
-                fill(values, nelements);
-                return 1;
-            }
-
-            marked += walkElements(tid, values);
-        }
-        else if (typeClass == HDF5Constants.H5T_VLEN) {
-            /* A sequence carries its own length, so only its elements can be judged. */
+        else if (typeClass == HDF5Constants.H5T_ARRAY || typeClass == HDF5Constants.H5T_VLEN) {
+            /* Neither one names its slots, so a dropped element misplaces nothing. */
             marked += walkElements(tid, values);
         }
 
@@ -186,18 +178,6 @@ class H5CompoundMemberCheck {
         }
 
         return false;
-    }
-
-    private static int elementCount(long tid) throws Exception
-    {
-        long[] dims = new long[H5.H5Tget_array_ndims(tid)];
-        H5.H5Tget_array_dims(tid, dims);
-
-        long count = 1;
-        for (long dim : dims)
-            count *= dim;
-
-        return Math.clamp(count, 0, Integer.MAX_VALUE);
     }
 
     /* Replace every value of one record, at the length the datatype asks for. */

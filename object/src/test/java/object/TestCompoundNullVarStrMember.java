@@ -61,7 +61,9 @@ public class TestCompoundNullVarStrMember {
             /* Same shape with every label present, to show the check leaves good data alone. */
             writeVlenOfCompound(fid, "without_null_label", "two");
             /* Middle element of the array is NULL, which the library drops the same way. */
-            writeArrayOfVarStr(fid, "array_with_null");
+            writeArrayOfVarStr(fid, "array_with_null", "a", null, "c");
+            /* The shape of a fixed array used as a growable list, so every NULL trails. */
+            writeArrayOfVarStr(fid, "array_with_trailing_nulls", "a", "b", null, null, null);
         }
         finally {
             H5.H5Fclose(fid);
@@ -120,21 +122,20 @@ public class TestCompoundNullVarStrMember {
         }
     }
 
-    /* ARRAY[3] of variable-length string whose middle element is written as NULL. */
-    private static void writeArrayOfVarStr(long fid, String name) throws Exception
+    /* ARRAY of variable-length string, one element per value given, where null writes a NULL. */
+    private static void writeArrayOfVarStr(long fid, String name, String... elementValues) throws Exception
     {
         long vstr = H5.H5Tcopy(HDF5Constants.H5T_C_S1);
         H5.H5Tset_size(vstr, HDF5Constants.H5T_VARIABLE);
 
-        long arr = H5.H5Tarray_create(vstr, 1, new long[] {3});
+        long arr = H5.H5Tarray_create(vstr, 1, new long[] {elementValues.length});
         long sid = H5.H5Screate_simple(1, new long[] {1}, null);
         long did = H5.H5Dcreate(fid, name, arr, sid, HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT,
                                 HDF5Constants.H5P_DEFAULT);
         try {
             ArrayList<Object> elements = new ArrayList<>();
-            elements.add("a");
-            elements.add(null);
-            elements.add("c");
+            for (String value : elementValues)
+                elements.add(value);
 
             H5.H5DwriteVL(did, arr, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT,
                           new Object[] {elements});
@@ -214,14 +215,36 @@ public class TestCompoundNullVarStrMember {
     }
 
     @Test
-    @DisplayName("Array with a NULL element - HDFView#503 detection")
-    public void testShortArrayIsMarked() throws Exception
+    @DisplayName("Array with a NULL element keeps the elements that came back")
+    public void testShortArrayKeepsItsElements() throws Exception
     {
         List<?> elements = sequenceAt(open("array_with_null").getData(), 0);
 
-        assertEquals(3, elements.size(), "A marked array is filled back out to its element count");
-        for (int i = 0; i < elements.size(); i++)
-            assertEquals("*ERR:HDFView#503*", elements.get(i), "Element " + i + " should be marked");
+        /*
+         * The array was written as a, NULL, c and comes back with the NULL dropped. Array
+         * elements carry no names, so nothing is labelled with the wrong value and the two
+         * that arrived are worth more than a marker in place of all three. The surviving c
+         * does sit an element too early, which nothing in what the library returns can
+         * tell apart from an array that only ever held two values.
+         */
+        assertEquals(2, elements.size(), "The dropped element leaves the array short");
+        assertEquals("a", elements.get(0));
+        assertEquals("c", elements.get(1));
+    }
+
+    @Test
+    @DisplayName("Array whose unused tail is NULL still shows the values it holds")
+    public void testTrailingNullsLeaveTheValuesAlone() throws Exception
+    {
+        List<?> elements = sequenceAt(open("array_with_trailing_nulls").getData(), 0);
+
+        /*
+         * A fixed-length array standing in for a growable list leaves its tail NULL, so the
+         * values it does hold all arrive in the right place and must still be displayed.
+         */
+        assertEquals(2, elements.size(), "Only the values that were written come back");
+        assertEquals("a", elements.get(0));
+        assertEquals("b", elements.get(1));
     }
 
     /* One point of a VLEN dataset, which reads back as a list of records. */
