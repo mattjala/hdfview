@@ -185,8 +185,8 @@ public class TestCompoundNullVarStrMember {
          */
         List<?> marked = (List<?>)records.get(1);
         assertEquals(2, marked.size(), "A marked record is filled back out to its member count");
-        assertEquals("*ERR:HDFView#503*", marked.get(0), "The dropped member's place is marked");
-        assertEquals("*ERR:HDFView#503*", marked.get(1),
+        assertEquals("*UNSUPPORTED*", marked.get(0), "The dropped member's place is marked");
+        assertEquals("*UNSUPPORTED*", marked.get(1),
                      "The member that would have shifted into its place is marked too");
 
         /* The rest of the dataset still reads. */
@@ -207,7 +207,7 @@ public class TestCompoundNullVarStrMember {
         for (int i = 0; i < records.size(); i++) {
             List<?> record = (List<?>)records.get(i);
             assertEquals(2, record.size(), "Record " + i + " should keep both members");
-            assertNotEquals("*ERR:HDFView#503*", record.get(0), "Record " + i + " should not be marked");
+            assertNotEquals("*UNSUPPORTED*", record.get(0), "Record " + i + " should not be marked");
         }
 
         assertEquals("one", ((List<?>)records.get(0)).get(0));

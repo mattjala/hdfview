@@ -42,7 +42,7 @@ class H5FixedStringCheck {
 
     private static final Logger log = LoggerFactory.getLogger(H5FixedStringCheck.class);
 
-    private static final String ERROR_MARKER = "*ERR:HDFView#504*";
+    private static final String ERROR_MARKER = "*UNSUPPORTED*";
 
     private H5FixedStringCheck() {}
 
@@ -149,9 +149,9 @@ class H5FixedStringCheck {
 
         /*
          * A marker another check already left here is longer than a narrow field, so leave it
-         * alone rather than relabel the problem it names.
+         * alone rather than count it a second time.
          */
-        if (str.startsWith("*ERR:HDFView#"))
+        if (ERROR_MARKER.equals(str))
             return 0;
 
         int valueSize = str.getBytes(StandardCharsets.ISO_8859_1).length;

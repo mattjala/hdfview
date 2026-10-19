@@ -46,7 +46,7 @@ class H5CompoundMemberCheck {
 
     private static final Logger log = LoggerFactory.getLogger(H5CompoundMemberCheck.class);
 
-    private static final String ERROR_MARKER = "*ERR:HDFView#503*";
+    private static final String ERROR_MARKER = "*UNSUPPORTED*";
 
     private H5CompoundMemberCheck() {}
 

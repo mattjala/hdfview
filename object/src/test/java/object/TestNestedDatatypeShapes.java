@@ -533,7 +533,7 @@ public class TestNestedDatatypeShapes {
          *
          * See HDFGroup/hdfview issue 504.
          */
-        final String marker = "*ERR:HDFView#504*";
+        final String marker = "*UNSUPPORTED*";
 
         Object data = open("vlen_of_fixed_string").getData();
         assertInstanceOf(Object[].class, data, "Expected one entry per selected point");
