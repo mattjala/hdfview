@@ -79,6 +79,10 @@ sed -i -e 's/.*/%dir "&"/' %{package_filelist}
 package_type=rpm
 LAUNCHER_AS_SERVICE_SCRIPTS
 DESKTOP_COMMANDS_INSTALL
+# Put the launcher on PATH as "hdfview", without replacing a file we don't own
+if [ ! -e /usr/bin/hdfview ] || [ -L /usr/bin/hdfview ]; then
+  ln -sf APPLICATION_DIRECTORY/bin/HDFView /usr/bin/hdfview
+fi
 LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
 
 %pre
@@ -94,5 +98,13 @@ DESKTOP_SCRIPTS
 LAUNCHER_AS_SERVICE_SCRIPTS
 DESKTOP_COMMANDS_UNINSTALL
 LAUNCHER_AS_SERVICE_COMMANDS_UNINSTALL
+# On upgrade the old package's preun script runs after the new package's post
+# script, so only remove the PATH link on a real uninstall
+if [ "$1" = 0 ]; then
+  # Remove the PATH link only if it still points at this package's launcher
+  if [ "$(readlink /usr/bin/hdfview)" = "APPLICATION_DIRECTORY/bin/HDFView" ]; then
+    rm -f /usr/bin/hdfview
+  fi
+fi
 
 %clean

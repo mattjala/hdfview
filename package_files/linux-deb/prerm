@@ -24,6 +24,10 @@ LAUNCHER_AS_SERVICE_SCRIPTS
 case "$1" in
     remove|upgrade|deconfigure)
 DESKTOP_COMMANDS_UNINSTALL
+# Remove the PATH link only if it still points at this package's launcher
+if [ "$(readlink /usr/bin/hdfview)" = "/opt/APPLICATION_PACKAGE/bin/HDFView" ]; then
+  rm -f /usr/bin/hdfview
+fi
 LAUNCHER_AS_SERVICE_COMMANDS_UNINSTALL
     ;;
 

@@ -23,6 +23,10 @@ LAUNCHER_AS_SERVICE_SCRIPTS
 case "$1" in
     configure)
 DESKTOP_COMMANDS_INSTALL
+# Put the launcher on PATH as "hdfview", without replacing a file we don't own
+if [ ! -e /usr/bin/hdfview ] || [ -L /usr/bin/hdfview ]; then
+  ln -sf /opt/APPLICATION_PACKAGE/bin/HDFView /usr/bin/hdfview
+fi
 LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
     ;;
 

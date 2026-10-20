@@ -72,10 +72,32 @@
     <!-- Standard required root -->
     <Directory Id="TARGETDIR" Name="SourceDir"/>
 
+    <!-- Put the install directory on PATH so HDFView can be started as "hdfview".
+         Per-user installs change the user PATH; system-wide installs change the
+         system PATH. The entry is removed on uninstall. -->
+    <?ifdef JpIsSystemWide ?>
+      <?define HdfPathSystem="yes"?>
+      <?define HdfPathRegRoot="HKLM"?>
+    <?else?>
+      <?define HdfPathSystem="no"?>
+      <?define HdfPathRegRoot="HKCU"?>
+    <?endif?>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="HdfPathEntry" Guid="*">
+        <Environment Id="HdfPathEnv" Name="PATH" Value="[INSTALLDIR]"
+                     Action="set" Part="last" Permanent="no" System="$(var.HdfPathSystem)"/>
+        <RegistryKey Root="$(var.HdfPathRegRoot)"
+                     Key="Software\$(var.JpAppVendor)\$(var.JpAppName)\$(var.JpAppVersion)">
+          <RegistryValue Type="integer" Name="PathEntry" Value="1" KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+    </DirectoryRef>
+
     <Feature Id="DefaultFeature" Title="!(loc.MainFeatureTitle)" Level="1">
       <ComponentGroupRef Id="Shortcuts"/>
       <ComponentGroupRef Id="Files"/>
       <ComponentGroupRef Id="FileAssociations"/>
+      <ComponentRef Id="HdfPathEntry"/>
     </Feature>
 
     <CustomAction Id="JpSetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
